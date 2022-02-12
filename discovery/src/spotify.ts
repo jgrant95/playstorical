@@ -2,6 +2,7 @@ import AsyncRetry from "async-retry"
 import SpotifyWebApi from "spotify-web-api-node"
 
 import { PaginationRequest } from "models/pagination"
+import { PlaylistResponse } from "models/spotify.model"
 
 export class SpotifyDiscoverer {
     private _creds
@@ -19,6 +20,7 @@ export class SpotifyDiscoverer {
         console.log('Authenticating...')
 
         const authResp = await this.spotifyApi.clientCredentialsGrant()
+        console.log('token...', authResp.body.access_token)
         this.spotifyApi.setAccessToken(authResp.body.access_token)
 
         console.log('Authenticated...')
@@ -51,20 +53,20 @@ export class SpotifyDiscoverer {
         }
     }
 
-    async getPlaylistIds(categoryId: string): Promise<string[]> {
+    async getPlaylistIds(categoryId: string): Promise<PlaylistResponse[]> {
         try {
             if (!this.spotifyApi) throw new Error('Must be authenticated!')
 
             console.log('Retrieving playlist ids...')
 
-            const getPlaylistsByCategory: PaginationRequest<string[]> = async (params: { offset: number, limit: number }) => {
+            const getPlaylistsByCategory: PaginationRequest<PlaylistResponse[]> = async (params: { offset: number, limit: number }) => {
                 try {
                     const resp = await this.spotifyApi.getPlaylistsForCategory(categoryId, params)
 
                     const items = resp.body.playlists.items
 
                     return Promise.resolve({
-                        entity: items && items.map(x => x.id),
+                        entity: items && items.map(x => ({ playlistId: x.id, snapshotId: x.snapshot_id })),
                         total: resp.body.playlists.total,
                         limit: resp.body.playlists.limit,
                         offset: resp.body.playlists.offset
@@ -75,7 +77,7 @@ export class SpotifyDiscoverer {
                 }
             };
 
-            return this.getPaginatedResults<string>(getPlaylistsByCategory, categoryId)
+            return this.getPaginatedResults<PlaylistResponse>(getPlaylistsByCategory, categoryId)
         }
         catch (e) {
             console.log('ERROR!')

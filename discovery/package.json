@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@azure/cosmos": "^3.15.1",
     "@types/async-retry": "^1.4.3",
     "@types/express": "^4.17.13",
     "@types/request": "^2.48.8",
@@ -19,7 +20,8 @@
     "nodemon": "^2.0.15",
     "p-retry": "^5.0.0",
     "request": "^2.88.2",
-    "spotify-web-api-node": "^5.0.2"
+    "spotify-web-api-node": "^5.0.2",
+    "moment": "~2.29.1"
   },
   "devDependencies": {
     "@tsconfig/node14": "^1.0.1",

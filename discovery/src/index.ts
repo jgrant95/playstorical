@@ -1,33 +1,26 @@
 import express from "express";
-import { SpotifyDiscoverer } from "spotify";
+
+import { Creator } from "creator";
 
 const port = 4200
 var app = express();
 
-const redirectUri = 'http://localhost:4200/callback'
-const clientId = '8087412e6ce64950b2d699062cd80e83'
-const clientSecret = '5e1ea8df6f2c403c90ff91c981e297e2'
+// creator is not persisting or does not have the private this.props available :()
+const creator = new Creator({ database: 'COSMOSDB' })
 
-const getSPotifyStuff = async () => {
+const startCreatorProcess = async () => {
     console.log('Starting...')
-    const spotify = new SpotifyDiscoverer(
-        {
-            clientId,
-            clientSecret,
-            redirectUri
-        })
 
-    await spotify.authenticate()
+    await creator.start('BY_CATEGORY')
 
-    const cats = await spotify.getCategoryIds()
-
-    console.log(cats.length, cats)
-
-    const allPlaylistReq = cats.map(id => spotify.getPlaylistIds(id));
-
-    const playlistIds = (await Promise.all(allPlaylistReq)).flat()
-
-    console.log(playlistIds.length, '...playlists. Finished.')
+    console.log('DONE')
 }
 
-getSPotifyStuff()
+const poll = async () => {
+    await startCreatorProcess()
+
+    console.log('Waiting 1min til next execution...')
+    setTimeout(poll, 60000)
+}
+
+poll()
