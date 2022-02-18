@@ -1,12 +1,7 @@
-import express from "express";
-
-import { Creator } from "creator";
-
-const port = 4200
-var app = express();
+import { Creator } from "./creator";
 
 // creator is not persisting or does not have the private this.props available :()
-const creator = new Creator({ database: 'COSMOSDB' })
+const creator = new Creator({ database: 'cosmosdb' })
 
 const startCreatorProcess = async () => {
     console.log('Starting...')

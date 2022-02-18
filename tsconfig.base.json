@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "rootDir": ".",
+        "strict": true,
+        "noImplicitAny": false,
+        "noUnusedLocals": true,
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        // This will be from the context of inner projects, so going up
+        // a level is needed here
+        "paths": {
+            "@playstorical/core": [
+                "../core/src/index"
+            ],
+            "@playstorical/core/*": [
+                "../core/src/*"
+            ]
+        }
+    },
+    "references": [
+        {
+            "path": "../core"
+        }
+    ]
+}

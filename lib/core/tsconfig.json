@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "composite": true,
+        "target": "es2015",
+        "module": "commonjs",
+        "lib": [
+            "es2020",
+            "dom"
+        ],
+        "outDir": "./dist/",
+        "baseUrl": ".",
+        "rootDir": ".",
+        "resolveJsonModule": true
+    },
+    "include": [
+        "./src/**/*.ts",
+        "./src/**/*.json"
+    ],
+    "exclude": [
+        "node_modules",
+        "./dist"
+    ],
+    "extends": "../../tsconfig.base.json",
+    "references": []
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"playstorical-db.model.d.ts","sourceRoot":"","sources":["../../../../src/models/database/playstorical-db.model.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,cAAc;IAC3B,MAAM,EAAE,CAAC,CAAC,EAAE,KAAK,EAAE,CAAC,EAAE,EAAE,IAAI,CAAC,EAAE,wBAAwB,KAAK,OAAO,CAAC,GAAG,CAAC,CAAA;CAC3E;AAED,MAAM,WAAW,wBAAwB;IACrC,YAAY,EAAE,MAAM,CAAA;CACvB;AAED,oBAAY,sBAAsB,GAAG,UAAU,CAAA"}

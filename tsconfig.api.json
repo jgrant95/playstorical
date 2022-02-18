@@ -1,0 +1,22 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "commonjs",
+        "lib": [
+            "es2020"
+        ],
+        "rootDir": ".",
+        "outDir": "dist",
+        "paths": {
+            "@playstorical/core/*": [
+                "./lib/core/src/*"
+            ]
+        }
+    },
+    "references": [
+        {
+            "path": "./lib/core"
+        }
+    ]
+}
