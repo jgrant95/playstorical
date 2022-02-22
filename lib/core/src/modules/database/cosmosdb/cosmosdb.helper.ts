@@ -1,5 +1,5 @@
-import { Container, CosmosClient, CreateOperationInput, UpsertOperationInput } from "@azure/cosmos";
-import { BatchedOps, BatchedOperationType, BatchedOperations } from "../../../models/database/cosmosdb.model";
+import { Container, CosmosClient, CreateOperationInput, OperationResponse, UpsertOperationInput } from "@azure/cosmos";
+import { BulkOps, BulkOperationType, BulkOperations } from "../../../models/database/cosmosdb.model";
 
 export async function getContainerAsync(client: CosmosClient, databaseId: string, containerId: string): Promise<Container> {
     const { database } = await client.databases.createIfNotExists({ id: databaseId });
@@ -11,7 +11,7 @@ export async function getContainerAsync(client: CosmosClient, databaseId: string
     return container
 }
 
-export function getOp(item: any, operationType: BatchedOperationType, partitionKey?: string): UpsertOperationInput | CreateOperationInput {
+export function getOp(item: any, operationType: BulkOperationType, partitionKey?: string): UpsertOperationInput | CreateOperationInput {
     return {
         operationType,
         partitionKey: partitionKey ? item[partitionKey] : undefined,
@@ -19,8 +19,8 @@ export function getOp(item: any, operationType: BatchedOperationType, partitionK
     }
 }
 
-export function getBatchedOps<T>(items: T[], operationType: BatchedOperationType, opts?: { partitionKey }): BatchedOps[] {
-    const batchedOps = items.reduce((arr: { batch: number, ops: BatchedOperations[] }[], curr, index) => {
+export function getBatchedOps<T>(items: T[], operationType: BulkOperationType, opts?: { partitionKey }): BulkOps[] {
+    const batchedOps = items.reduce((arr: { batch: number, ops: BulkOperations[] }[], curr, index) => {
         let currentBatch = arr.length ? Math.max(...arr.map(x => x.batch)) : 0
 
         // Add new batch with ops
@@ -39,36 +39,43 @@ export function getBatchedOps<T>(items: T[], operationType: BatchedOperationType
     return batchedOps
 }
 
-export async function executeBatchedOps(container: Container, batchedOps: BatchedOps[]) {
-    const execute = async (container: Container, batchedOps: BatchedOps[], isRetry?: boolean) => {
-        batchedOps.forEach(async batch => {
-            const operationType = batch.ops[0]?.operationType // TODO: These should get used per op rather than just the first
-            const partitionKey = batch.ops[0]?.partitionKey as any // TODO: Improve typing here
+export async function executeBulkOps(container: Container, bulkOps: BulkOps[]): Promise<OperationResponse[]> {
+    const execute = async (container: Container, bulkOps: BulkOps[], isRetry?: boolean): Promise<OperationResponse[]> => {
+        const reqs = bulkOps.map(async bulk => {
+            const operationType = bulk.ops[0]?.operationType // TODO: These should get used per op rather than just the first
+            const partitionKey = bulk.ops[0]?.partitionKey as any // TODO: Improve typing here
 
-            console.log(`[${operationType}] Batch ${batch.batch} Started...`)
+            console.log(`[${operationType}] Bulk op ${bulk.batch} Started...`, `isRetry: ${!!isRetry}`)
             try {
-                const bulkUpsertResp = await container.items.bulk(batch.ops)
+                const bulkUpsertResp = await container.items.bulk(bulk.ops)
 
                 const isFailedStatus = (res: any) => res.statusCode === 200 && res.statusCode === 201
 
                 const failedUpserts = bulkUpsertResp.filter(isFailedStatus)
-                if (bulkUpsertResp.some(isFailedStatus)) {
+                if (failedUpserts.length > 0) {
                     console.error('Failed to upsert some of bulk ops.', bulkUpsertResp.map(r => r.resourceBody?.id))
-                    return
+
+                    await execute(container, [{
+                        batch: bulk.batch,
+                        ops: failedUpserts.map(res => getOp(res.resourceBody, operationType, partitionKey))
+                    }],
+                        true)
+
+                    return Promise.reject('Failed to upsert some of bulk ops. Retry attempted.')
                 }
 
-                await execute(container, [{
-                    batch: batch.batch,
-                    ops: failedUpserts.map(res => getOp(res.resourceBody, operationType, partitionKey))
-                }],
-                    true)
+                console.log(`[${operationType}] Bulk Op ${bulk.batch} Complete!`)
 
-                console.log(`[UPSERT] Batch ${batch.batch} Complete!`)
+                return Promise.resolve(bulkUpsertResp)
             } catch (e) {
                 console.log('Failed to bulk upsert', e)
+
+                throw new Error('Failed to bulk upsert. Error logged.')
             }
         });
+
+        return (await Promise.all(reqs)).flat()
     }
 
-    await execute(container, batchedOps)
+    return await execute(container, bulkOps)
 }

@@ -1,9 +1,9 @@
-import { OperationInput, BulkOperationType, CreateOperationInput, UpsertOperationInput } from "@azure/cosmos";
+import { BulkOperationType, CreateOperationInput, UpsertOperationInput } from "@azure/cosmos";
 
-export type BatchedOps = {
+export type BulkOps = {
     batch: number;
-    ops: BatchedOperations[];
+    ops: BulkOperations[];
 }
 
-export type BatchedOperations = CreateOperationInput | UpsertOperationInput
-export type BatchedOperationType = typeof BulkOperationType.Create | typeof BulkOperationType.Upsert
+export type BulkOperations = CreateOperationInput | UpsertOperationInput
+export type BulkOperationType = typeof BulkOperationType.Create | typeof BulkOperationType.Upsert
