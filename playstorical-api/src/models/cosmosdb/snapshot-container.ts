@@ -1,10 +1,12 @@
 import { MusicProvider, SnapshotObject } from "@playstorical/core/models";
+import moment from "moment";
 
 export type SnapshotType = 'snapshot' | 'snapshot-track'
 
 export interface SnapshotBase {
     id: string
     snapshotId: string
+    createdAt: moment.Moment
     readonly type: SnapshotType
 }
 

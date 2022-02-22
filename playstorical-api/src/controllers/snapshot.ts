@@ -4,19 +4,18 @@ import { getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/
 import { validatePlaylist } from "../helpers/playlist.helper";
 import { Snapshot, SnapshotTrack } from "../models/cosmosdb";
 import { generateId } from "../helpers/utils.helper";
+import moment from "moment";
 
-// import { Snapshot } from "models/cosmosdb";
-
-const capture = async (req: Request, res: Response, next: NextFunction) => {
+export const capture = async (req: Request, res: Response, next: NextFunction) => {
     // validate input
-    const { playlistId, snapshotId, providerType } = req.body
+    const { playlistId, snapshotId, provider } = req.body
 
     // get music provider
-    const provider = getMusicProvider(providerType)
+    const musicProvider = getMusicProvider(provider)
 
     // get playlist from provider
-    provider.authenticate()
-    const playlist = await provider.getPlaylist(playlistId)
+    await musicProvider.authenticate()
+    const playlist = await musicProvider.getPlaylist(playlistId)
 
     // validate playlist - what to do when; snapshotId/playlistId is different (log?), playlist is missing etc
     // should this connect as middleware or just return validation obj or somin else?
@@ -27,27 +26,42 @@ const capture = async (req: Request, res: Response, next: NextFunction) => {
 
     // create cosmosdb lib instance
     const db = getPlaystoricalDbProvider('cosmosdb')
+    const existingSnapshot = await db.get<Snapshot>(playlist.snapshot_id, 'snapshot', { partitionKeyValue: playlist.snapshot_id })
+
+    if (existingSnapshot) {
+        console.info(`Existing snapshot exists with Id: ${existingSnapshot?.id}`)
+        return res.status(200).json({
+            id: existingSnapshot?.id,
+            message: 'Snapshot already exists, nothing new was captured.'
+        })
+    }
+
+    const snapshotCreatedAt = moment()
+    // setup object to insert
+    const snapshot: Snapshot = {
+        id: playlist.snapshot_id,
+        playlistId,
+        snapshotId: playlist.snapshot_id,
+        data: playlist,
+        provider,
+        type: 'snapshot',
+        createdAt: snapshotCreatedAt
+    }
 
     const snapshotTracks: SnapshotTrack[] = (playlist.tracks?.items || []).map(track => ({
         id: generateId(),
         snapshotId: playlist.snapshot_id,
         data: track,
-        type: 'snapshot-track'
+        type: 'snapshot-track',
+        createdAt: snapshotCreatedAt
     }))
 
-    // setup object to insert
-    const snapshot: Snapshot = {
-        id: generateId(),
-        playlistId,
-        snapshotId: playlist.snapshot_id,
-        data: playlist,
-        provider: providerType,
-        type: 'snapshot'
-    }
-
-    // insert object
-    const doc = db.insert(snapshot)
+    // insert snapshot and tracks
+    await db.create([
+        snapshot,
+        ...snapshotTracks
+    ], 'snapshot', { partitionKey: 'snapshotId' })
 
     // return response object (w/ id)
-    return res.status(200).json(doc)
+    res.status(200).json(snapshot.id)
 }

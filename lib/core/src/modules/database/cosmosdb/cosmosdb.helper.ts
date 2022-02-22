@@ -19,7 +19,7 @@ export function getOp(item: any, operationType: BulkOperationType, partitionKey?
     }
 }
 
-export function getBatchedOps<T>(items: T[], operationType: BulkOperationType, opts?: { partitionKey }): BulkOps[] {
+export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts?: { partitionKey }): BulkOps[] {
     const batchedOps = items.reduce((arr: { batch: number, ops: BulkOperations[] }[], curr, index) => {
         let currentBatch = arr.length ? Math.max(...arr.map(x => x.batch)) : 0
 
@@ -68,9 +68,9 @@ export async function executeBulkOps(container: Container, bulkOps: BulkOps[]): 
 
                 return Promise.resolve(bulkUpsertResp)
             } catch (e) {
-                console.log('Failed to bulk upsert', e)
+                console.log(`[${operationType}]Failed to execute bulk ops`, e)
 
-                throw new Error('Failed to bulk upsert. Error logged.')
+                throw new Error(`[${operationType}] Failed to execute bulk ops. Error logged.`)
             }
         });
 

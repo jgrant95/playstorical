@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0 --respawn src/index.ts"
+    "start": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0 --respawn src/server.ts"
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +13,7 @@
     "@types/morgan": "^1.9.3",
     "@types/spotify-web-api-node": "^5.0.4",
     "express": "^4.17.2",
+    "express-async-handler": "^1.2.0",
     "moment": "~2.29.1",
     "morgan": "^1.10.0",
     "nanoid": "^3.3.1",
