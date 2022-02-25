@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request } from "express";
 
 import { getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
 import { validatePlaylist } from "../helpers/playlist.helper";
@@ -6,7 +6,7 @@ import { Snapshot, SnapshotTrack } from "../models/cosmosdb";
 import { generateId } from "../helpers/utils.helper";
 import moment from "moment";
 
-export const capture = async (req: Request, res: Response, next: NextFunction) => {
+export const capture = async (req: Request, res, next) => {
     // validate input
     const { playlistId, snapshotId, provider } = req.body
 
@@ -37,17 +37,6 @@ export const capture = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const snapshotCreatedAt = moment()
-    // setup object to insert
-    const snapshot: Snapshot = {
-        id: playlist.snapshot_id,
-        playlistId,
-        snapshotId: playlist.snapshot_id,
-        data: playlist,
-        provider,
-        type: 'snapshot',
-        createdAt: snapshotCreatedAt
-    }
-
     const snapshotTracks: SnapshotTrack[] = (playlist.tracks?.items || []).map(track => ({
         id: generateId(),
         snapshotId: playlist.snapshot_id,
@@ -56,11 +45,32 @@ export const capture = async (req: Request, res: Response, next: NextFunction) =
         createdAt: snapshotCreatedAt
     }))
 
+    const snapshotData: any = {
+        ...playlist
+    }
+    delete snapshotData.tracks
+
+    // setup object to insert
+    const snapshot: Snapshot = {
+        id: playlist.snapshot_id,
+        playlistId,
+        snapshotId: playlist.snapshot_id,
+        data: snapshotData,
+        provider,
+        type: 'snapshot',
+        createdAt: snapshotCreatedAt
+    }
+
+    const createLogTime = `Creating snapshot and ${snapshotTracks.length} tracks`
+    console.time(createLogTime)
+
     // insert snapshot and tracks
     await db.create([
         snapshot,
         ...snapshotTracks
     ], 'snapshot', { partitionKey: 'snapshotId' })
+
+    console.timeEnd(createLogTime)
 
     // return response object (w/ id)
     res.status(200).json(snapshot.id)

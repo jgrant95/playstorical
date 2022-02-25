@@ -27,7 +27,7 @@ export class Comosdb implements PlaystoricalDb {
 
         const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
 
-        const opResponses = await executeBulkOps(container, batchedOps)
+        const opResponses = await executeBulkOps(container, batchedOps, opts)
         const totalRespCharge = opResponses.reduce((prev, curr) => prev + curr.requestCharge, 0)
 
         console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
@@ -38,7 +38,7 @@ export class Comosdb implements PlaystoricalDb {
 
         const batchedOps = getBulkOps(items, BulkOperationType.Create, opts)
 
-        const opResponses = await executeBulkOps(container, batchedOps)
+        const opResponses = await executeBulkOps(container, batchedOps, opts)
         const totalRespCharge = opResponses.reduce((prev, curr) => prev + curr.requestCharge, 0)
 
         console.info(`[Create] Total RUs: ${totalRespCharge}`)
