@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "outDir": "dist",
+    "sourceMap": true,
+    "strict": false,
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+  },
+  "include": [
+    "./*/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "ts-node": {
+    "files": true
+  },
+  "extends": "../tsconfig.api.json"
+}

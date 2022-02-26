@@ -1,8 +1,8 @@
 import { Request } from "express";
 
 import { getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
+import { Snapshot, SnapshotTrack } from '@playstorical/core/models'
 import { validatePlaylist } from "../helpers/playlist.helper";
-import { Snapshot, SnapshotTrack } from "../models/cosmosdb";
 import { generateId } from "../helpers/utils.helper";
 import moment from "moment";
 
