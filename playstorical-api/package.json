@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0 --respawn src/server.ts"
+    "start": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0 --respawn src/server.ts",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
