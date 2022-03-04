@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "version": "",
+  "name": "playstorical-functions",
+  "version": "0.0.1",
   "scripts": {
     "build": "webpack --mode=production",
     "build:production": "npm run prestart && npm prune --production",
