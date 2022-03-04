@@ -42,8 +42,6 @@ app.use((req, res, next) => {
 });
 
 /** SERVER */
-// const httpServer = http.createServer(app);
-// httpServer.listen(PORT, () => console.log(`The server is running on port ${PORT}`));
 app.listen(PORT, () => {
     console.info(`Running on port: ${PORT}`, { PORT })
 })
