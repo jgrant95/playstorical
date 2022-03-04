@@ -9,10 +9,10 @@ const cosmosDBTrigger: AzureFunction = async function (context: Context, documen
 
         // GET ADDITIONAL TRACKS
 
-        return {
+        return Promise.resolve({
             ...doc,
             test: 'MR LOL'
-        } as any
+        } as any)
     }
 }
 
