@@ -4,7 +4,9 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
 module.exports = {
   mode: 'production',
-  entry: path.resolve(__dirname, './SnapshotCosmosTrigger/'),
+  entry: {
+    SnapshotCosmosTrigger: path.resolve(__dirname, './SnapshotCosmosTrigger/')
+  },
   target: 'node',
   module: {
     rules: [
@@ -24,7 +26,7 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
+    filename: '[name]/index.js',
     libraryTarget: 'commonjs'
   },
   externals: [nodeExternals()],

@@ -5,9 +5,9 @@
       "name": "documents",
       "direction": "in",
       "leaseCollectionName": "leases",
-      "connectionStringSetting": "",
-      "databaseName": "",
-      "collectionName": "",
+      "connectionStringSetting": "playstoricalCosmosdb",
+      "databaseName": "test-sql-2",
+      "collectionName": "snapshot",
       "createLeaseCollectionIfNotExists": true
     }
   ],

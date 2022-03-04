@@ -2,9 +2,9 @@
   "name": "",
   "version": "",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --mode=production",
     "build:production": "npm run prestart && npm prune --production",
-    "watch": "webpack --w",
+    "watch": "webpack -w",
     "prestart": "npm run build && func extensions install",
     "start:host": "func start",
     "start": "npm-run-all --parallel start:host watch",
