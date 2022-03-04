@@ -2,13 +2,22 @@
   "bindings": [
     {
       "type": "cosmosDBTrigger",
-      "name": "documents",
+      "name": "inputDocumentIn",
       "direction": "in",
       "leaseCollectionName": "leases",
       "connectionStringSetting": "playstoricalCosmosdb",
       "databaseName": "test-sql-2",
       "collectionName": "snapshot",
       "createLeaseCollectionIfNotExists": true
+    },
+    {
+      "name": "inputDocumentOut",
+      "type": "cosmosDB",
+      "databaseName": "test-sql-2",
+      "collectionName": "snapshot",
+      "createIfNotExists": true,
+      "connectionStringSetting": "playstoricalCosmosdb",
+      "direction": "out"
     }
   ],
   "scriptFile": "../dist/SnapshotCosmosTrigger/index.js"
