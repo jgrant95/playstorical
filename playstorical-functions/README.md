@@ -20,3 +20,5 @@
 - https://dev.to/dnasir/azure-functions-node-js-typescript-webpack-a3m 
 - https://docs.microsoft.com/en-us/azure/azure-functions/functions-add-output-binding-cosmos-db-vs-code?tabs=in-process&pivots=programming-language-javascript
 - https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-cosmosdb-v2-trigger?tabs=javascript
+- [Function binding retries](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-errors?tabs=javascript)
+- [Azure Function developer guide](https://docs.microsoft.com/en-us/azure/azure-functions/functions-reference-node?tabs=v2-v3-v4-export%2Cv2-v3-v4-done%2Cv2%2Cv2-log-custom-telemetry%2Cv2-accessing-request-and-response%2Cwindows-setting-the-node-version)

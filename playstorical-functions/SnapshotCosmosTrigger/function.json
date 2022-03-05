@@ -11,7 +11,7 @@
       "createLeaseCollectionIfNotExists": true
     },
     {
-      "name": "inputDocumentOut",
+      "name": "snapshotDocumentOutput",
       "type": "cosmosDB",
       "databaseName": "test-sql-2",
       "collectionName": "snapshot",
@@ -20,5 +20,11 @@
       "direction": "out"
     }
   ],
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": 5,
+    "minimumInterval": "00:00:10",
+    "maximumInterval": "00:15:00"
+  },
   "scriptFile": "../dist/SnapshotCosmosTrigger/index.js"
 }

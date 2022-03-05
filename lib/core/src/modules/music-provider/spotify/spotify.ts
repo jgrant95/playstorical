@@ -54,6 +54,10 @@ export class Spotify implements MusicProvider {
         }
     }
 
+    async getAdditionalTracks(playlistId: string): Promise<SnapshotObjectFull | null> {
+        throw new Error('not implemented')
+    }
+
     async getCategoryIds(): Promise<string[]> {
         try {
             if (!this.spotifyApi) throw new Error('Must be authenticated!')

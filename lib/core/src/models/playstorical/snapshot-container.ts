@@ -7,6 +7,7 @@ export interface SnapshotBase {
     id: string
     snapshotId: string
     createdAt: moment.Moment
+    updatedAt?: moment.Moment
     readonly type: SnapshotType
 }
 
