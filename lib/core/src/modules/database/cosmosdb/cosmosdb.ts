@@ -7,7 +7,7 @@ const key = process.env.COSMOS_KEY || "gWwpHThNpxe8P74p19WDIwgo1Y4Pl7HMXoc13sGK7
 const endpoint = process.env.COSMOS_ENDPOINT || "https://test-sql-1.documents.azure.com:443/";
 const databaseId = process.env.COSMOS_DATABASE || "test-sql-2";
 
-export class Comosdb implements PlaystoricalDb {
+export class Cosmosdb implements PlaystoricalDb {
     private _cosmosdbClient!: CosmosClient
 
     constructor(opts?: any) {
