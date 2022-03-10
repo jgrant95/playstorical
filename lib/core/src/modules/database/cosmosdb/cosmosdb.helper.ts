@@ -45,34 +45,18 @@ export async function executeBulkOps(container: Container, bulkOps: BulkOps[], o
             const operationType = bulk.ops[0]?.operationType // TODO: These should get used per op rather than just the first
             const partitionKeyValue = opts?.partitionKey ? (bulk.ops[0]?.resourceBody[opts.partitionKey] as any) : undefined
 
-            console.log(`[${operationType}] Bulk op ${bulk.batch} Started...`, `isRetry: ${!!isRetry}`)
+            console.log(`[${operationType}] Bulk op ${bulk.batch} (${bulk.ops.length} items) Started...`, `isRetry: ${!!isRetry}`)
             try {
-                const bulkUpsertResp = await container.items.batch(bulk.ops, partitionKeyValue)
+                const bulkResp = await container.items.batch(bulk.ops, partitionKeyValue)
 
-                // const isFailedStatus = (res: any) => res.statusCode !== 200 || res.statusCode !== 201
-
-                // // const failedUpserts = bulkUpsertResp.reduce((prev: any[], curr) => {
-                // //     if (isFailedStatus(curr)) {
-                // //         prev.push(curr)
-                // //     }
-                // //     return prev
-                // // }, [])
-
-                // if (failedUpserts.length > 0) {
-                //     console.error('Failed to upsert some of bulk ops.', failedUpserts.map(r => r.resourceBody?.id))
-
-                //     await execute(container, [{
-                //         batch: bulk.batch,
-                //         ops: failedUpserts.map(res => getOp(res.resourceBody, operationType, partitionKey))
-                //     }],
-                //         true)
-
-                //     return Promise.reject('Failed to upsert some of bulk ops. Retry attempted.')
-                // }
+                const statusCode: number = bulkResp.result?.statusCode || bulkResp.result[0]?.statusCode
+                if (statusCode !== 200 && statusCode !== 201) {
+                    throw bulkResp
+                }
 
                 console.log(`[${operationType}] Bulk Op ${bulk.batch} Complete!`)
 
-                return Promise.resolve(bulkUpsertResp)
+                return Promise.resolve(bulkResp)
             } catch (e) {
                 console.log(`[${operationType}]Failed to execute bulk ops`, e)
 

@@ -23,12 +23,13 @@ export class Comosdb implements PlaystoricalDb {
     }
 
     async upsert(items: any[], containerId: string, opts?: PlaystoricalDbUpsertOpts) {
+        // TODO & Fix: If you don't put in the correct partitionKey (when its required), we dont get an error!
         const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
 
         const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
 
         const opResponses = await executeBulkOps(container, batchedOps, opts)
-        const totalRespCharge = opResponses.reduce((prev, curr) => prev + curr.requestCharge, 0)
+        const totalRespCharge = this.getRequestChargeTotal(opResponses)
 
         console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
     }
@@ -39,7 +40,7 @@ export class Comosdb implements PlaystoricalDb {
         const batchedOps = getBulkOps(items, BulkOperationType.Create, opts)
 
         const opResponses = await executeBulkOps(container, batchedOps, opts)
-        const totalRespCharge = opResponses.reduce((prev, curr) => prev + curr.requestCharge, 0)
+        const totalRespCharge = this.getRequestChargeTotal(opResponses)
 
         console.info(`[Create] Total RUs: ${totalRespCharge}`)
     }
@@ -50,5 +51,12 @@ export class Comosdb implements PlaystoricalDb {
         const res = await container.item(id).read()
 
         return !!res?.item
+    }
+
+    private getRequestChargeTotal(opResponses: any[]) {
+        return opResponses.reduce((accOpTotal, currOp) => {
+            const totalPerRes: number = (currOp?.result || []).reduce((prevRes, currRes) => prevRes + currRes.requestCharge, 0)
+            return accOpTotal + totalPerRes
+        }, 0)
     }
 }
