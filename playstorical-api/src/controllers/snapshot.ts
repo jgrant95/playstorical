@@ -2,8 +2,8 @@ import { Request } from "express";
 
 import { getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
 import { Snapshot, SnapshotTrack } from '@playstorical/core/models'
+import { getSnapshotTracks } from '@playstorical/core/helpers'
 import { validatePlaylist } from "../helpers/playlist.helper";
-import { generateId } from "../helpers/utils.helper";
 import moment from "moment";
 
 export const capture = async (req: Request, res, next) => {
@@ -37,13 +37,19 @@ export const capture = async (req: Request, res, next) => {
     }
 
     const snapshotCreatedAt = moment()
-    const snapshotTracks: SnapshotTrack[] = (playlist.tracks?.items || []).map(track => ({
-        id: generateId(),
-        snapshotId: playlist.snapshot_id,
-        data: track,
-        type: 'snapshot-track',
-        createdAt: snapshotCreatedAt
-    }))
+
+    const snapshotTracks = getSnapshotTracks(playlist.snapshot_id, playlist.tracks.items)
+        .reduce((prev: SnapshotTrack[], track: SnapshotTrack) => {
+            const updatedTrack: SnapshotTrack = {
+                ...track,
+                createdAt: snapshotCreatedAt
+            }
+
+            return [
+                ...prev,
+                updatedTrack
+            ]
+        }, [])
 
     const snapshotData: any = {
         ...playlist
@@ -58,7 +64,10 @@ export const capture = async (req: Request, res, next) => {
         data: snapshotData,
         provider,
         type: 'snapshot',
-        createdAt: snapshotCreatedAt
+        createdAt: snapshotCreatedAt,
+        metadata: {
+            initAdditionalTracksReq: playlist.tracks.next
+        }
     }
 
     const createLogTime = `Creating snapshot and ${snapshotTracks.length} tracks`

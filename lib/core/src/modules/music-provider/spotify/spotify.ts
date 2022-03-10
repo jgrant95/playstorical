@@ -1,7 +1,7 @@
 import AsyncRetry from "async-retry"
 import SpotifyWebApi from "spotify-web-api-node"
 
-import { MusicProvider, PlaylistResponse, PaginationRequest, SnapshotObjectFull } from "../../../models"
+import { MusicProvider, PlaylistResponse, PaginationRequest, SnapshotObjectFull, SnapshotTrackResponse } from "../../../models"
 
 export class Spotify implements MusicProvider {
     private _creds
@@ -54,8 +54,62 @@ export class Spotify implements MusicProvider {
         }
     }
 
-    async getAdditionalTracks(playlistId: string): Promise<SnapshotObjectFull | null> {
-        throw new Error('not implemented')
+    async getPlaylistTracks(playlistId: string, opts: { offset, limit }): Promise<SnapshotTrackResponse | null> {
+        try {
+            if (!this.spotifyApi) throw new Error('Must be authenticated!')
+
+            console.log('Retrieving playlist ids...')
+
+            const resp = await this.spotifyApi.getPlaylistTracks(playlistId, opts)
+
+            if (resp.statusCode === 404) {
+                console.log(`Playlist tracks for playlist ${playlistId} from Spotify was not found.`, resp)
+
+                return null
+            }
+
+            if (resp.statusCode !== 200) {
+                console.log(`Failed to get playlist tracks, PlaylistId ${playlistId} from Spotify.`, resp)
+
+                throw new Error(`Failed to get playlist tracks, PlaylistId ${playlistId} from Spotify.`)
+            }
+
+            return resp.body
+        }
+        catch (e) {
+            throw e
+        }
+    }
+
+    async getAdditionalTracks(playlistId: string, opts: { nextReqUrl: string }): Promise<SpotifyApi.PlaylistTrackObject[] | null> {
+        if (!opts.nextReqUrl) {
+            return null
+        }
+
+        const getTracks = async (nextReqUrl): Promise<SpotifyApi.PlaylistTrackObject[]> => {
+            const nextTracksUrl = new URL(nextReqUrl)?.searchParams
+            const offset = nextTracksUrl?.get('offset')
+            const limit = nextTracksUrl?.get('limit')
+
+            const resp = await this.getPlaylistTracks(playlistId, { offset, limit })
+
+            if (resp === null) {
+                return []
+            }
+
+            if (resp.next) {
+                return [
+                    ...resp.items,
+                    ...(await getTracks(resp.next))
+                ]
+            }
+
+            return resp.items
+        }
+
+        const tracks = await getTracks(opts.nextReqUrl)
+
+        return tracks
     }
 
     async getCategoryIds(): Promise<string[]> {

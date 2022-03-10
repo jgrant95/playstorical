@@ -9,15 +9,6 @@
       "databaseName": "test-sql-2",
       "collectionName": "snapshot",
       "createLeaseCollectionIfNotExists": true
-    },
-    {
-      "name": "snapshotDocumentOutput",
-      "type": "cosmosDB",
-      "databaseName": "test-sql-2",
-      "collectionName": "snapshot",
-      "createIfNotExists": true,
-      "connectionStringSetting": "playstoricalCosmosdb",
-      "direction": "out"
     }
   ],
   "retry": {

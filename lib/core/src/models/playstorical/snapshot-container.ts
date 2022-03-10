@@ -16,6 +16,9 @@ export interface Snapshot extends SnapshotBase {
     playlistId: string
     provider: MusicProvider
     data: SnapshotObject
+    metadata: {
+        initAdditionalTracksReq: string | null
+    }
 }
 
 export interface SnapshotTrack extends SnapshotBase {

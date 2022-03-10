@@ -10,6 +10,10 @@ export interface MusicProvider {
     getCategoryIds: (opts?: {}) => Promise<string[]>
 
     getPlaylistIds: (categoryId: string) => Promise<PlaylistResponse[]>
+
+    getPlaylistTracks: (playlistId: string, opts: { offset, limit }) => Promise<SnapshotTrackResponse | null>
+
+    getAdditionalTracks(playlistId: string, opts: { nextReqUrl: string }): Promise<SpotifyApi.PlaylistTrackObject[] | null>
 }
 
 export interface PlaylistResponse {
@@ -21,3 +25,5 @@ export type MusicProviderType = 'spotify'
 
 export type SnapshotObject = Omit<SpotifyApi.PlaylistObjectFull, 'tracks'>
 export type SnapshotObjectFull = SpotifyApi.PlaylistObjectFull
+
+export type SnapshotTrackResponse = SpotifyApi.PlaylistTrackResponse

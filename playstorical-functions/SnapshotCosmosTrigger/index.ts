@@ -1,31 +1,31 @@
 import { AzureFunction, Context } from "@azure/functions"
 
 import { Snapshot, SnapshotBase, SnapshotTrack } from '@playstorical/core/models'
-import { getMusicProvider } from '@playstorical/core/modules'
+import { getBulkOps, getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
+import { getSnapshotTracks } from '@playstorical/core/helpers'
 
 const cosmosDBTrigger: AzureFunction = async function (context: Context, documents: (Snapshot | SnapshotTrack)[]): Promise<void> {
     if (!!documents && documents.length > 0) {
         const snapshotDoc = documents[0]
         context.log('Document Id: ', snapshotDoc.id);
 
+        const db = getPlaystoricalDbProvider('cosmosdb')
+
         if (isNewSnapshot(snapshotDoc)) {
             // ADD ADDITIONAL SNAPSHOT TRACKS
             const spotify = getMusicProvider('spotify')
             spotify.authenticate()
-            spotify.getPlaylist
 
-            // TODO: figure out best way to get additional snapshot tracks, being optimal and agnostic.
+            const nextReqUrl = snapshotDoc.metadata.initAdditionalTracksReq
+            if (nextReqUrl) {
+                // Spotify only lets you get tracks by playlist ID - there is a chance tracks may not be fully
+                // representing the spotify snapshot. This is currently the best option.
+                const tracks = await spotify.getAdditionalTracks(snapshotDoc.playlistId, { nextReqUrl })
+                const snapshotTracks = getSnapshotTracks(snapshotDoc.snapshotId, tracks)
 
-            const newTrack = {
-                id: '1',
-                type: 'snapshot-track',
-                test: 'Blobby1',
-                snapshotId: '111' || snapshotDoc.snapshotId
+                const ops = getBulkOps(snapshotTracks, 'Upsert', { partitionKey: snapshotDoc.snapshotId })
+                await db.upsert(ops, 'snapshot', { partitionKey: snapshotDoc.snapshotId })
             }
-
-            context.bindings.snapshotDocumentOutput = newTrack
-            // TODO: Change to use cosmosdb client to handle batch upsert ops 
-            //       and make transactional. If it fails, the function should retry.
         }
 
         // UPSERT PLAYLIST
@@ -34,6 +34,6 @@ const cosmosDBTrigger: AzureFunction = async function (context: Context, documen
     }
 }
 
-const isNewSnapshot = (snapshot: SnapshotBase) => snapshot.type === 'snapshot' && !snapshot.updatedAt
+const isNewSnapshot = (snapshot: SnapshotBase): snapshot is Snapshot => snapshot.type === 'snapshot' && !snapshot.updatedAt
 
 export default cosmosDBTrigger;
