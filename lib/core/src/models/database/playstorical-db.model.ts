@@ -10,6 +10,8 @@ export type PlaystoricalDbCreateOpts = {
     partitionKey: string
 }
 
-export type PlaystoricalDbUpsertOpts = PlaystoricalDbCreateOpts & {}
+export type PlaystoricalDbUpsertOpts = PlaystoricalDbCreateOpts & {
+    batchTransaction: boolean
+}
 
 export type PlaystoricalDbProvider = 'cosmosdb'

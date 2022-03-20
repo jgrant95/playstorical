@@ -1,7 +1,7 @@
-import { BulkOperationType, CosmosClient } from "@azure/cosmos"
+import { BulkOperationType, CosmosClient, OperationResponse } from "@azure/cosmos"
 
 import { PlaystoricalDb, PlaystoricalDbCreateOpts, PlaystoricalDbUpsertOpts } from "../../../models";
-import { executeBulkOps, getBulkOps, getContainerAsync } from "./cosmosdb.helper"
+import { executeBatchOps, executeBulkOps, getBulkOps, getContainerAsync } from "./cosmosdb.helper"
 
 const key = process.env.COSMOS_KEY || "gWwpHThNpxe8P74p19WDIwgo1Y4Pl7HMXoc13sGK7bsFzYPa8nc6Dd4V25ioR36RuiCdDwIngecZWxcyImdKpQ==";
 const endpoint = process.env.COSMOS_ENDPOINT || "https://test-sql-1.documents.azure.com:443/";
@@ -23,24 +23,65 @@ export class Cosmosdb implements PlaystoricalDb {
     }
 
     async upsert(items: any[], containerId: string, opts?: PlaystoricalDbUpsertOpts) {
-        // TODO & Fix: If you don't put in the correct partitionKey (when its required), we dont get an error!
-        const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
-
-        const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
-
-        const opResponses = await executeBulkOps(container, batchedOps, opts)
-        const totalRespCharge = this.getRequestChargeTotal(opResponses)
-
-        console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
+        if (opts?.batchTransaction) {
+            await this.upsertBatch(items, containerId, opts)
+        } else {
+            await this.upsertBulk(items, containerId, opts)
+        }
     }
 
+    /**
+     * upserts items as batch transaction
+    **/
+    async upsertBatch(items: any[], containerId: string, opts?: PlaystoricalDbUpsertOpts) {
+        try {
+            // TODO & Fix: If you don't put in the correct partitionKey (when its required), we dont get an error!
+            const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
+
+            const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
+
+            // TODO Handle failures better from promise reject.
+            const opResponses = await executeBatchOps(container, batchedOps, opts)
+            const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
+
+            console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
+        }
+        catch (e) {
+            throw e
+        }
+    }
+
+    /**
+     * upserts items in bulk, not caring about a transaction
+    **/
+    async upsertBulk(items: any[], containerId: string, opts?: PlaystoricalDbUpsertOpts) {
+        try {
+            // TODO & Fix: If you don't put in the correct partitionKey (when its required), we dont get an error!
+            const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
+
+            const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
+
+            // TODO Handle failures better from promise reject.
+            const opResponses = await executeBulkOps(container, batchedOps)
+            const totalRespCharge = this.getBulkRequestChargeTotal(opResponses)
+
+            console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
+        }
+        catch (e) {
+            throw e
+        }
+    }
+
+    /**
+     * creates items as batch transaction
+    **/
     async create<T>(items: T[], containerId: string, opts?: PlaystoricalDbCreateOpts) {
         const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
 
         const batchedOps = getBulkOps(items, BulkOperationType.Create, opts)
 
-        const opResponses = await executeBulkOps(container, batchedOps, opts)
-        const totalRespCharge = this.getRequestChargeTotal(opResponses)
+        const opResponses = await executeBatchOps(container, batchedOps, opts)
+        const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
 
         console.info(`[Create] Total RUs: ${totalRespCharge}`)
     }
@@ -53,10 +94,14 @@ export class Cosmosdb implements PlaystoricalDb {
         return !!res?.item
     }
 
-    private getRequestChargeTotal(opResponses: any[]) {
+    private getBatchRequestChargeTotal(opResponses: any[]): number {
         return opResponses.reduce((accOpTotal, currOp) => {
-            const totalPerRes: number = (currOp?.result || []).reduce((prevRes, currRes) => prevRes + currRes.requestCharge, 0)
+            const totalPerRes: number = this.getBulkRequestChargeTotal(currOp.result)
             return accOpTotal + totalPerRes
         }, 0)
+    }
+
+    private getBulkRequestChargeTotal(results: OperationResponse[]): number {
+        return (results || []).reduce((prevRes, currRes) => prevRes + (currRes?.requestCharge || 0), 0)
     }
 }

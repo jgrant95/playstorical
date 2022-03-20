@@ -11,5 +11,19 @@
             "localRoot": "${workspaceFolder}/playstorical-api",
             "restart": true
         },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "Discovery",
+            "localRoot": "${workspaceFolder}/discovery",
+            "restart": true
+        },
+        {
+            "name": "Attach to Node Functions",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "preLaunchTask": "func: host start"
+        }
     ]
 }

@@ -35,7 +35,7 @@ async function addAdditionalTracks(db: Cosmosdb, snapshotDoc: Snapshot) {
 
         console.log(`Adding ${snapshotTracks.length} additional tracks`)
 
-        await db.upsert(snapshotTracks, 'snapshot', { partitionKey: 'snapshotId' })
+        await db.upsert(snapshotTracks, 'snapshot', { partitionKey: 'snapshotId', batchTransaction: true })
     }
 }
 
@@ -54,7 +54,7 @@ async function upsertPlaylistDocs(db: Cosmosdb, snapshotDoc: Snapshot) {
         type: 'snapshot-header'
     }
 
-    await db.upsert([playlist, snapshotHeader], 'playlist', { partitionKey: 'playlistId' })
+    await db.upsert([playlist, snapshotHeader], 'playlist', { partitionKey: 'playlistId', batchTransaction: true })
 }
 
 export default cosmosDBTrigger;

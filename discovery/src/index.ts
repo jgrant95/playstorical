@@ -12,10 +12,21 @@ const startCreatorProcess = async () => {
 }
 
 const poll = async () => {
-    await startCreatorProcess()
+    try {
+        await startCreatorProcess()
+    }
+    catch (e) {
+        console.log('Creator process failed.', e)
+    }
 
     console.log('Waiting 1min til next execution...')
     setTimeout(poll, 60000)
 }
 
 poll()
+    .then(_ => {
+        console.log('poll finished')
+    })
+    .catch(e => {
+        console.log('big ol err', e)
+    })

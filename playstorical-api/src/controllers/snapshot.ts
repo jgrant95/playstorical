@@ -70,16 +70,13 @@ export const capture = async (req: Request, res, next) => {
         }
     }
 
-    const createLogTime = `Creating snapshot and ${snapshotTracks.length} tracks`
-    console.time(createLogTime)
+    console.log(`Creating snapshot and ${snapshotTracks.length} tracks`)
 
     // insert snapshot and tracks
     await db.create([
         snapshot,
         ...snapshotTracks
     ], 'snapshot', { partitionKey: 'snapshotId' })
-
-    console.timeEnd(createLogTime)
 
     // return response object (w/ id)
     res.status(200).json(snapshot.id)

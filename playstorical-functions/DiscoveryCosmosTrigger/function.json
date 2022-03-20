@@ -1,0 +1,21 @@
+{
+  "bindings": [
+    {
+      "type": "cosmosDBTrigger",
+      "name": "inputDocumentIn",
+      "direction": "in",
+      "leaseCollectionName": "leases",
+      "connectionStringSetting": "playstoricalCosmosdb",
+      "databaseName": "test-sql-2",
+      "collectionName": "discovery",
+      "createLeaseCollectionIfNotExists": true
+    }
+  ],
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": -1,
+    "minimumInterval": "00:00:10",
+    "maximumInterval": "00:15:00"
+  },
+  "scriptFile": "../dist/DiscoveryCosmosTrigger/index.js"
+}

@@ -1,6 +1,6 @@
 import { BulkOperationType, CreateOperationInput, UpsertOperationInput } from "@azure/cosmos";
 
-export type BulkOps = {
+export type BulkBatchOps = {
     batch: number;
     ops: BulkOperations[];
 }

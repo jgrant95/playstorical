@@ -5,7 +5,8 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 module.exports = {
   mode: 'production',
   entry: {
-    SnapshotCosmosTrigger: path.resolve(__dirname, './SnapshotCosmosTrigger/')
+    SnapshotCosmosTrigger: path.resolve(__dirname, './SnapshotCosmosTrigger/'),
+    DiscoveryCosmosTrigger: path.resolve(__dirname, './DiscoveryCosmosTrigger/')
   },
   target: 'node',
   module: {
