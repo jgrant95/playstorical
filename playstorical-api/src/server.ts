@@ -3,7 +3,7 @@ import express, { Express } from 'express';
 import morgan from 'morgan';
 import snapshotRoutes from './routes/snapshot';
 
-const PORT: any = process.env.PORT ?? 3000;
+const PORT: any = process.env.PORT || 80;
 const app: Express = express();
 
 /** LOGGING */
@@ -30,6 +30,7 @@ app.use((req, res, next) => {
 /** ROUTES */
 app.use('/snapshot', snapshotRoutes);
 app.use('/ok', (req, res, next) => res.json({ ok: 'Server is looking A.O.K!' }));
+app.get('/favicon.ico', (req, res) => res.status(204));
 
 /** ERROR HANDLING */
 app.use((req, res, next) => {

@@ -2,7 +2,7 @@
   "name": "playstorical-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/server.ts",
   "scripts": {
     "start": "ts-node-dev -r tsconfig-paths/register --inspect=0.0.0.0 --respawn src/server.ts",
     "build": "tsc"

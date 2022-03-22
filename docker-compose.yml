@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  functions:
+    build:
+      context: playstorical-functions
+      dockerfile: ./debug/Dockerfile
+    restart: always
+    # environment:
+    #   - FUNCTIONS_WORKER_RUNTIME=node
+    #   - AzureWebJobsStorage=${AZURE_WEB_JOBS_STORAGE}
+    #   - connectionStringSetting=${FUNCTION_CONNECTION_STRING_SETTING}
+    #   - APPLICATIONINSIGHTS_CONNECTION_STRING=${FUNCTION_APPLICATIONINSIGHTS_CONNECTION_STRING}
+    #   - WEBSITE_CONTENTAZUREFILECONNECTIONSTRING=${WEBSITE_CONTENTAZUREFILECONNECTIONSTRING}
+    #   - WEBSITE_CONTENTSHARE=${WEBSITE_CONTENTSHARE}
+    #   - playstoricalCosmosdb=${PLAYSTORICAL_CONNECTION_STRING}
+    #   - testsql1_DOCUMENTDB=${PLAYSTORICAL_CONNECTION_STRING}
+    volumes:
+      - ./tsconfig.base.json:/home/site/wwwroot/tsconfig.base.json
+      - ./tsconfig.api.json:/home/site/wwwroot/tsconfig.api.json
+    ports:
+      - 9000:9229
+  api:
+    build:
+      context: playstorical-api
+      dockerfile: ./debug/Dockerfile
+    restart: always
+    volumes:
+      - /usr/src/app/node_modules
+      - ./playstorical-api:/usr/src/playstorical-api
+      - ./lib:/usr/src/lib
+      - ./tsconfig.base.json:/usr/src/tsconfig.base.json
+      - ./tsconfig.api.json:/usr/src/tsconfig.api.json
+    ports:
+      - 3000:80
+      - 9001:9229
+  discovery:
+    build:
+      context: discovery
+      dockerfile: ./debug/Dockerfile
+    restart: always
+    volumes:
+      - /usr/src/app/node_modules
+      - ./discovery:/usr/src/discovery
+      - ./lib:/usr/src/lib
+      - ./tsconfig.base.json:/usr/src/tsconfig.base.json
+      - ./tsconfig.api.json:/usr/src/tsconfig.api.json
+    ports:
+      - 9002:9229
