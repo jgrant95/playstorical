@@ -7,9 +7,8 @@ WORKDIR ${APPDIR}
 ENV AzureWebJobsScriptRoot=${APPDIR} \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-# COPY package.json .
-# COPY package-lock.json .
-COPY . .
+COPY package.json .
+COPY package-lock.json .
 
 RUN npm install
 RUN npm build
