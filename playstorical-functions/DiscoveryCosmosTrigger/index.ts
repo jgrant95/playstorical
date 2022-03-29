@@ -1,7 +1,7 @@
 import { AzureFunction, Context } from "@azure/functions"
 
 import { DiscoveryPlaylistHeader } from '@playstorical/core/models'
-import { PlaystoricalApi } from "playstorical-functions/services/playstorical-api"
+import { PlaystoricalApi } from "../services/playstorical-api"
 
 const api = new PlaystoricalApi()
 

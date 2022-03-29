@@ -1,14 +1,17 @@
-FROM mcr.microsoft.com/azure-functions/node:3.0-appservice
+FROM mcr.microsoft.com/azure-functions/node:4-node14-core-tools
 
-ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+ENV APPDIR /usr/src/playstorical-functions
+RUN mkdir -p ${APPDIR}
+WORKDIR ${APPDIR}
+
+ENV AzureWebJobsScriptRoot=${APPDIR} \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-WORKDIR /home/site/wwwroot
-
-COPY package.json .
-COPY package-lock.json .
-COPY local.settings.json .
+# COPY package.json .
+# COPY package-lock.json .
+COPY . .
 
 RUN npm install
+RUN npm build
 
 CMD ["npm", "start"]

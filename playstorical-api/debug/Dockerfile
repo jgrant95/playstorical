@@ -1,9 +1,7 @@
 FROM node:16-slim
 
 ENV APPDIR /usr/src/playstorical-api
-
 RUN mkdir -p ${APPDIR}
-
 WORKDIR ${APPDIR}
 
 COPY package.json .
