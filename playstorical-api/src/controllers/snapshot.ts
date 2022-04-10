@@ -1,83 +1,21 @@
 import { Request } from "express";
 
-import { getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
-import { Snapshot, SnapshotTrack } from '@playstorical/core/models'
-import { getSnapshotTracks } from '@playstorical/core/helpers'
-import { validatePlaylist } from "../helpers/playlist.helper";
-import moment from "moment";
+import { capture } from "../services/snapshot.service";
 
-export const capture = async (req: Request, res, next) => {
-    // validate input
-    const { playlistId, snapshotId, provider } = req.body
+export const captureRoute = async (req: Request, res, cache) => {
+    try {
+        const result = await capture(req.body, cache)
 
-    // get music provider
-    const musicProvider = getMusicProvider(provider)
-
-    // get playlist from provider
-    await musicProvider.authenticate()
-    const playlist = await musicProvider.getPlaylist(playlistId)
-
-    // validate playlist - what to do when; snapshotId/playlistId is different (log?), playlist is missing etc
-    // should this connect as middleware or just return validation obj or somin else?
-    // const validator = { validate: (_req: any, _playlist: any) => ({ errors: [], warnings: [] }) }
-    // validator.validate(req, playlist)
-    validatePlaylist({ playlistId, snapshotId }, { playlist })
-    if (!playlist) throw new Error('Playlist not found') // Figure out how this can be identified by the validate function
-
-    // create cosmosdb lib instance
-    const db = getPlaystoricalDbProvider('cosmosdb')
-    const existingSnapshot = await db.get<Snapshot>(playlist.snapshot_id, 'snapshot', { partitionKeyValue: playlist.snapshot_id })
-
-    if (existingSnapshot) {
-        console.info(`Existing snapshot exists with Id: ${existingSnapshot?.id}`)
-        return res.status(200).json({
-            id: existingSnapshot?.id,
-            message: 'Snapshot already exists, nothing new was captured.'
-        })
-    }
-
-    const snapshotCreatedAt = moment()
-
-    const snapshotTracks = getSnapshotTracks(playlist.snapshot_id, playlist.tracks.items)
-        .reduce((prev: SnapshotTrack[], track: SnapshotTrack) => {
-            const updatedTrack: SnapshotTrack = {
-                ...track,
-                createdAt: snapshotCreatedAt
-            }
-
-            return [
-                ...prev,
-                updatedTrack
-            ]
-        }, [])
-
-    const snapshotData: any = {
-        ...playlist
-    }
-    delete snapshotData.tracks
-
-    // setup object to insert
-    const snapshot: Snapshot = {
-        id: playlist.snapshot_id,
-        playlistId,
-        snapshotId: playlist.snapshot_id,
-        data: snapshotData,
-        provider,
-        type: 'snapshot',
-        createdAt: snapshotCreatedAt,
-        metadata: {
-            initAdditionalTracksReq: playlist.tracks.next
+        if (result.ok === false) {
+            console.log(`Failed to capture snapshot. Error: ${result.error}`)
+            return res.status(400).send(result.error)
         }
+
+        return res.status(200).json(result.message)
     }
+    catch (err) {
+        console.log(`Exception thrown. Failed to capture snapshot. Error: ${err}`)
 
-    console.log(`Creating snapshot and ${snapshotTracks.length} tracks`)
-
-    // insert snapshot and tracks
-    await db.create([
-        snapshot,
-        ...snapshotTracks
-    ], 'snapshot', { partitionKey: 'snapshotId' })
-
-    // return response object (w/ id)
-    res.status(200).json(snapshot.id)
+        return res.status(500).send(err)
+    }
 }

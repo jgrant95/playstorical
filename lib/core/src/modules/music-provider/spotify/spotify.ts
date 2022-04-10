@@ -1,28 +1,49 @@
 import AsyncRetry from "async-retry"
 import SpotifyWebApi from "spotify-web-api-node"
+import NodeCache from "node-cache";
 
 import { MusicProvider, PlaylistResponse, PaginationRequest, SnapshotObjectFull, SnapshotTrackResponse } from "../../../models"
 
+const SPOTIFY_TOKEN_CACHE_KEY = 'spotify-token'
+
 export class Spotify implements MusicProvider {
     private _creds
+    private _cache?: NodeCache
     spotifyApi!: SpotifyWebApi
 
-    constructor(credentials: {}) {
+    // Todo: setup caching for token next!
+    constructor(credentials: {}, cache?: NodeCache) {
         this._creds = credentials
+
+        if (cache) this._cache = cache
     }
 
     async authenticate() {
-        if (!this.spotifyApi) {
-            this.spotifyApi = new SpotifyWebApi(this._creds)
+        try {
+            if (!this.spotifyApi) {
+                this.spotifyApi = new SpotifyWebApi(this._creds)
+            }
+
+            let token = this._cache?.get<string>(SPOTIFY_TOKEN_CACHE_KEY)
+            if (!token) {
+                console.log('Authenticating...')
+
+                const authResp = await this.spotifyApi.clientCredentialsGrant()
+                console.log('token...', authResp.body.access_token)
+
+                this._cache?.set(SPOTIFY_TOKEN_CACHE_KEY, authResp.body.access_token, authResp.body.expires_in - 1)
+
+                token = authResp.body.access_token
+            }
+
+            this.spotifyApi.setAccessToken(token)
+
+            console.log('Authenticated...')
+        } catch (err) {
+            console.log(`Parsed error: `, JSON.stringify(err))
+
+            throw err
         }
-
-        console.log('Authenticating...')
-
-        const authResp = await this.spotifyApi.clientCredentialsGrant()
-        console.log('token...', authResp.body.access_token)
-        this.spotifyApi.setAccessToken(authResp.body.access_token)
-
-        console.log('Authenticated...')
     }
 
     async getPlaylist(playlistId: string): Promise<SnapshotObjectFull | null> {
@@ -49,6 +70,7 @@ export class Spotify implements MusicProvider {
         }
         catch (e) {
             console.log('ERROR!', e)
+            console.log(`Parsed error: `, JSON.stringify(e))
 
             throw new Error('ERROR!')
         }
@@ -77,6 +99,8 @@ export class Spotify implements MusicProvider {
             return resp.body
         }
         catch (e) {
+            console.log(`Parsed error: `, JSON.stringify(e))
+
             throw e
         }
     }
@@ -134,6 +158,7 @@ export class Spotify implements MusicProvider {
         }
         catch (e) {
             console.log('ERROR!', e)
+            console.log(`Parsed error: `, JSON.stringify(e))
 
             throw new Error('ERROR!')
         }
@@ -167,6 +192,7 @@ export class Spotify implements MusicProvider {
         }
         catch (e) {
             console.log('ERROR!', e)
+            console.log(`Parsed error: `, JSON.stringify(e))
 
             throw new Error('ERROR!')
         }
@@ -216,6 +242,7 @@ export class Spotify implements MusicProvider {
                         }
                         catch (e: any) {
                             console.log(`[ID: ${id}] Failed to execute:`, e)
+                            console.log(`[ID: ${id}] Parsed error: `, JSON.stringify(e))
 
                             const status = e.statusCode
 

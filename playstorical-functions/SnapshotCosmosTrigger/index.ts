@@ -8,8 +8,6 @@ const cosmosDBTrigger: AzureFunction = async function (context: Context, documen
     if (!!documents && documents.length > 0) {
         context.log(`Start processing ${documents.length} items...`);
         await Promise.all(documents.map(async (snapshotDoc) => {
-            context.log('Document Id: ', snapshotDoc.id);
-
             const db = getPlaystoricalDbProvider('cosmosdb')
 
             if (isSnapshot(snapshotDoc)) {

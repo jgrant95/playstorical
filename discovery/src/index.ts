@@ -19,8 +19,8 @@ const poll = async () => {
         console.log('Creator process failed.', e)
     }
 
-    console.log('Waiting 1min til next execution...')
-    setTimeout(poll, 60000)
+    console.log('Waiting 10min til next execution...')
+    setTimeout(poll, 600000)
 }
 
 poll()

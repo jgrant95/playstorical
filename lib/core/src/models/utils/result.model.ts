@@ -1,0 +1,1 @@
+export type Result = { ok: true, message: string } | { ok: false, error: string }
