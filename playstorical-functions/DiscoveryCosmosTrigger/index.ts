@@ -1,7 +1,7 @@
 import { AzureFunction, Context } from "@azure/functions"
 
 import { DiscoveryPlaylistHeader } from '@playstorical/core/models'
-import { Queuer } from "@playstorical/core/modules"
+import { CAPTURE_SNAPSHOT_QUEUE, Queuer } from "@playstorical/core/modules"
 
 const queuer = new Queuer(['capture-snapshot'])
 
@@ -21,7 +21,7 @@ async function captureSnapshot({ currentSnapshotId, ...header }: DiscoveryPlayli
         snapshotId: currentSnapshotId
     }
 
-    const result = await queuer.sendToQueue(captureDto, 'capture-snapshot')
+    const result = await queuer.sendToQueue(captureDto, CAPTURE_SNAPSHOT_QUEUE)
     if (result.ok === false) {
         throw new Error(`Failed to call api to capture snapshot. Error: ${result.error}`)
     }

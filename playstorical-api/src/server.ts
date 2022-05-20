@@ -5,9 +5,10 @@ import morgan from 'morgan';
 import { getSnapshotRoutes } from './routes/snapshot';
 // import { capture } from './services/snapshot.service';
 import NodeCache from "node-cache";
-import { tryExecute } from '@playstorical/core/helpers';
+import { Queuer, Dequeuer, CAPTURE_SNAPSHOT_QUEUE, CAPTURE_SNAPSHOT_ERROR_QUEUE } from '@playstorical/core/modules';
+import { capture } from './services/snapshot.service';
 
-// const PORT: any = process.env.PORT || 80;
+const PORT: any = process.env.PORT || 80;
 const app: Express = express();
 const cache = new NodeCache()
 
@@ -61,58 +62,46 @@ app.on('SIGTERM', () => {
     }
 })
 
-let ops = 3
-const exec = () => {
-    ops = ops - 1
-    console.log('ops left to exec: ', ops)
+const errorQueuer = new Queuer([CAPTURE_SNAPSHOT_ERROR_QUEUE])
 
+const dequeuer = new Dequeuer([{
+    name: CAPTURE_SNAPSHOT_QUEUE,
+    onMessage: (message, channelWrapper) => {
+        const captureData = JSON.parse(message.content.toString()) // test if this fails, what kind of error gets thrown?
+        capture(captureData, cache)
+            .then(async (result) => {
+                if (result.ok === false) {
+                    channelWrapper.nack(message)
+                    return await errorQueuer.sendToQueue(result, CAPTURE_SNAPSHOT_ERROR_QUEUE)
+                }
 
-    throw new Error()
-}
+                console.info(result.message)
+                channelWrapper.ack(message)
+            })
+            .catch(async (error) => {
+                console.log('An error occurred during dequeuing...')
+                console.error(error)
 
-tryExecute((bail) => exec(), { id: 'TestFn', retry: { factor: 1 } })
-    .then(() => {
-        console.log('test finished')
+                channelWrapper.nack(message)
+                return await errorQueuer.sendToQueue({
+                    ...captureData,
+                    error
+                }, CAPTURE_SNAPSHOT_ERROR_QUEUE)
+            })
+    }
+}])
+
+dequeuer.onConnect(() => {
+    /** SERVER */
+    server = app.listen(PORT, () => {
+        console.info(`Running on port: ${PORT}`, { PORT })
     })
 
-// const errorQueuer = new Queuer(['errors'])
+    server.timeout = 900000
+})
 
-// const dequeuer = new Dequeuer([{
-//     name: 'capture-snapshot',
-//     onMessage: (message, channelWrapper) => {
-//         const captureData = JSON.parse(message.content.toString()) // test if this fails, what kind of error gets thrown?
-//         capture(captureData, cache)
-//             .then((result) => {
-//                 if (result.ok === false) {
-//                     // Todo: Come up with robust error queueing + model
-//                     channelWrapper.nack(message)
-//                     return errorQueuer.sendToQueue(result, 'errors').then()
-//                 }
-
-//                 console.info(result.message)
-//                 channelWrapper.ack(message)
-//             })
-//             .catch((err) => {
-//                 console.log('An error occurred during dequeuing...')
-//                 console.error(err)
-
-//                 channelWrapper.nack(message)
-//                 return errorQueuer.sendToQueue(err, 'errors').then()
-//             })
-//     }
-// }])
-
-// dequeuer.onConnect(() => {
-//     /** SERVER */
-//     server = app.listen(PORT, () => {
-//         console.info(`Running on port: ${PORT}`, { PORT })
-//     })
-
-//     server.timeout = 900000
-// })
-
-// dequeuer.onDisconnect(() => {
-//     if (server) {
-//         server.close()
-//     }
-// })
+dequeuer.onDisconnect(() => {
+    if (server) {
+        server.close()
+    }
+})

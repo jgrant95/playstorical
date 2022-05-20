@@ -1,7 +1,6 @@
-import { AmqpConnectionManager, ChannelWrapper, connect } from 'amqp-connection-manager'
+import { AmqpConnectionManager, Channel, ChannelWrapper, connect } from 'amqp-connection-manager'
 
 const QUEUE_SERVICE_NAMES = process.env.QUEUE_SERVICE_NAMES || 'queue'
-const ERROR_QUEUE_NAME = 'errors'
 
 export class Dequeuer {
     queues: string[]
@@ -13,13 +12,11 @@ export class Dequeuer {
         this.connection = connect(this.getQueueServiceUrls())
         this.channelWrapper = this.connection.createChannel({
             json: true,
-            setup: channel =>
+            setup: (channel: Channel) =>
                 Promise.all([
                     ...queueConfig.map(q => channel.assertQueue(q.name)),
-                    channel.assertQueue('capture-snapshot'),
-                    channel.assertQueue(ERROR_QUEUE_NAME),
-                    channel.prefetch(1),
                     ...queueConfig.map(q => channel.consume(q.name, message => q.onMessage(message, this.channelWrapper))),
+                    channel.prefetch(1)
                 ])
         })
 
