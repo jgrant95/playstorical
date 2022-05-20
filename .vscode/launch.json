@@ -7,8 +7,71 @@
         {
             "type": "pwa-node",
             "request": "attach",
-            "name": "Playstorical API",
-            "localRoot": "${workspaceFolder}/playstorical-api",
+            "name": "API (docker)1",
+            "address": "localhost",
+            "port": 9003,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "API (docker)2",
+            "address": "localhost",
+            "port": 9004,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "API (docker)3",
+            "address": "localhost",
+            "port": 9005,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "API (docker)4",
+            "address": "localhost",
+            "port": 9006,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "API (docker)5",
+            "address": "localhost",
+            "port": 9007,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "API (docker)6",
+            "address": "localhost",
+            "port": 9008,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/usr/src",
+            "restart": true
+        },
+        {
+            "type": "pwa-node",
+            "request": "attach",
+            "name": "Functions (docker)",
+            "address": "localhost",
+            "port": 9000,
+            "localRoot": "${workspaceFolder}/playstorical-functions",
+            "remoteRoot": "/usr/src",
             "restart": true
         },
         {

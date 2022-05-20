@@ -1,13 +1,13 @@
 import { Container, CosmosClient, CreateOperationInput, OperationResponse, UpsertOperationInput } from "@azure/cosmos";
+import { tryExecute } from "../../../helpers";
+
 import { PlaystoricalDbCreateOpts } from "../../../models";
-import { BulkBatchOps, BulkOperationType, BulkOperations } from "../../../models/database/cosmosdb.model";
+import { BulkOps, BulkOperationType, BulkOperations } from "../../../models/database/cosmosdb.model";
 
 export async function getContainerAsync(client: CosmosClient, databaseId: string, containerId: string): Promise<Container> {
     const { database } = await client.databases.createIfNotExists({ id: databaseId });
 
-    console.time('get-container')
     const container = database.container(containerId);
-    console.timeEnd('get-container')
 
     return container
 }
@@ -19,7 +19,7 @@ export function getOp(item: any, operationType: BulkOperationType, partitionKey?
     }
 }
 
-export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts?: { partitionKey, batchQuantity?: number }): BulkBatchOps[] {
+export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts?: { partitionKey, batchQuantity?: number }): BulkOps[] {
     const batchedOps = items.reduce((arr: { batch: number, ops: BulkOperations[] }[], curr, index) => {
         let currentBatch = arr.length ? Math.max(...arr.map(x => x.batch)) : 0
         const batchQuantity = opts?.batchQuantity ?? 100
@@ -40,76 +40,83 @@ export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts
     return batchedOps
 }
 
-export async function executeBatchOps(container: Container, batchOps: BulkBatchOps[], opts?: PlaystoricalDbCreateOpts): Promise<any> {
-    const reqs = batchOps.map(bulk => new Promise((resolve, reject) => {
-        try {
-            // const operationType = bulk.ops[0]?.operationType // TODO: These should get used per op rather than just the first
-            const partitionKeyValue = opts?.partitionKey ? (bulk.ops[0]?.resourceBody[opts.partitionKey] as any) : undefined
+// Batch is a transactional db operation
+export async function executeBatchOps(container: Container, ops: BulkOperations[], opts?: PlaystoricalDbCreateOpts): Promise<any> {
+    return await tryExecute(async () => {
+        const partitionKeyValue = opts?.partitionKey ? (ops[0]?.resourceBody[opts.partitionKey] as any) : undefined
 
-            // console.log(`[${operationType}] Bulk op ${bulk.batch} (${bulk.ops.length} items) Started...`)
-
-            container.items.batch(bulk.ops, partitionKeyValue)
-                .then(function (bulkResp) {
-                    const statusCode: number = bulkResp.result?.statusCode || bulkResp.result[0]?.statusCode
-                    if (statusCode !== 200 && statusCode !== 201) {
-                        return reject(new Error(`${bulk.batch} Batch execution failed`))
-                    }
-
-                    // console.log(`[${operationType}] Bulk Op ${bulk.batch} Complete!`)
-
-                    return resolve(bulkResp)
-                })
-                .catch(e => {
-                    console.log('Azure batch library failed', e)
-                    return reject(new Error('Failed to execute batch ops :('))
-                })
-        }
-        catch (e) {
-            console.log('Failed to execute batch ops', e)
-            return reject(new Error('Failed to execute batch ops :('))
-        }
-    }))
-
-    return await Promise.all(reqs.flatMap(r => r))
-}
-
-export async function executeBulkOps(container: Container, bulkOps: BulkBatchOps[]): Promise<OperationResponse[]> {
-    const execute = async (container: Container, bulkOps: BulkBatchOps[], isRetry?: boolean): Promise<OperationResponse[]> => {
-        const reqs = bulkOps.map(async bulk => {
-            const operationType = bulk.ops[0]?.operationType // TODO: These should get used per op rather than just the first
-            const partitionKey = bulk.ops[0]?.partitionKey as any // TODO: Improve typing here
-
-            // console.log(`[${operationType}] Bulk op ${bulk.batch} Started...`, `isRetry: ${!!isRetry}`)
-            try {
-                const bulkUpsertResp = await container.items.bulk(bulk.ops)
-
-                const isFailedStatus = (res: any) => res.statusCode === 200 && res.statusCode === 201
-
-                const failedUpserts = bulkUpsertResp.filter(isFailedStatus)
-                if (failedUpserts.length > 0) {
-                    console.error('Failed to upsert some of bulk ops.', bulkUpsertResp.map(r => r.resourceBody?.id))
-
-                    await execute(container, [{
-                        batch: bulk.batch,
-                        ops: failedUpserts.map(res => getOp(res.resourceBody, operationType, partitionKey))
-                    }],
-                        true)
-
-                    return Promise.reject('Failed to upsert some of bulk ops. Retry attempted.')
+        container.items.batch(ops, partitionKeyValue)
+            .then(function (bulkResp) {
+                const statusCode: number = bulkResp.result?.statusCode || bulkResp.result[0]?.statusCode
+                if (statusCode !== 200 && statusCode !== 201) {
+                    console.error(bulkResp.result)
+                    return Promise.reject(new Error(`Batch execution failed. Status: ${statusCode}`))
                 }
 
-                // console.log(`[${operationType}] Bulk Op ${bulk.batch} Complete!`)
+                return Promise.resolve(bulkResp)
+            })
+            .catch((err) => Promise.reject(err))
+    }, {
+        id: 'batch-execute',
+        onError: (e) => {
+            if (isReqRateTooLarge429(e)) return
 
-                return Promise.resolve(bulkUpsertResp)
-            } catch (e) {
-                console.log('Failed to bulk upsert', e)
+            console.log('[batch-execute] Failed', e)
+        }
+    })
+}
 
-                throw new Error('Failed to bulk upsert. Error logged.')
-            }
-        });
+export async function executeBulkOps(container: Container, bulkOps: BulkOps[]): Promise<OperationResponse[]> {
+    const execute = async (container: Container, bulkOps: BulkOps[]): Promise<OperationResponse[]> => {
+        const results: OperationResponse[] = []
+        for (const bulk of bulkOps) {
+            let opsRemaining: BulkOperations[] = [...bulk.ops]
 
-        return (await Promise.all(reqs)).flat()
+            const result = await tryExecute(async () => {
+                const initOpCount = opsRemaining.length
+                const operationType = opsRemaining[0]?.operationType // TODO: These should get used per op rather than just the first
+                const partitionKey = opsRemaining[0]?.partitionKey as any // TODO: Improve typing here
+
+                try {
+                    const bulkUpsertResp = await container.items.bulk(opsRemaining)
+
+                    const isFailedStatus = (res: any) => res.statusCode === 200 && res.statusCode === 201
+
+                    opsRemaining = bulkUpsertResp
+                        .filter(isFailedStatus)
+                        .map(res => getOp(res.resourceBody, operationType, partitionKey))
+
+                    if (opsRemaining.length > 0) {
+                        console.error('Failed to execute some of bulk ops.', bulkUpsertResp.map(r => r.resourceBody?.id))
+
+                        // This will trigger retry
+                        return Promise.reject(`Failed to upsert some (${opsRemaining.length / initOpCount}) of bulk ops.`)
+                    }
+
+                    return Promise.resolve(bulkUpsertResp)
+                } catch (e) {
+                    console.log('Failed to bulk upsert', e)
+
+                    throw new Error('Failed to bulk upsert. Error logged.')
+                }
+            }, {
+                id: 'bulk-execute',
+                onError: (e) => {
+                    if (isReqRateTooLarge429(e)) return
+
+                    console.log('[bulk-execute] Failed', e)
+                }
+            })
+
+            results.push(...result)
+        }
+
+        return results
     }
 
     return await execute(container, bulkOps)
+}
+
+function isReqRateTooLarge429(e) {
+    return e?.message?.includes && e.message.includes('StatusCode: 429')
 }

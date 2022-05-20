@@ -1,10 +1,12 @@
 // import http from 'http';
-import { Dequeuer, Queuer, } from '@playstorical/core/modules';
+// import { Dequeuer, Queuer, } from '@playstorical/core/modules';
 import express, { Express } from 'express';
 import morgan from 'morgan';
 import { getSnapshotRoutes } from './routes/snapshot';
-import { capture } from './services/snapshot.service';
+// import { capture } from './services/snapshot.service';
 import NodeCache from "node-cache";
+import { Queuer, Dequeuer, CAPTURE_SNAPSHOT_QUEUE, CAPTURE_SNAPSHOT_ERROR_QUEUE } from '@playstorical/core/modules';
+import { capture } from './services/snapshot.service';
 
 const PORT: any = process.env.PORT || 80;
 const app: Express = express();
@@ -60,29 +62,31 @@ app.on('SIGTERM', () => {
     }
 })
 
-const errorQueuer = new Queuer(['errors'])
+const errorQueuer = new Queuer([CAPTURE_SNAPSHOT_ERROR_QUEUE])
 
 const dequeuer = new Dequeuer([{
-    name: 'capture-snapshot',
+    name: CAPTURE_SNAPSHOT_QUEUE,
     onMessage: (message, channelWrapper) => {
         const captureData = JSON.parse(message.content.toString()) // test if this fails, what kind of error gets thrown?
         capture(captureData, cache)
-            .then((result) => {
+            .then(async (result) => {
                 if (result.ok === false) {
-                    // Todo: Come up with robust error queueing + model
                     channelWrapper.nack(message)
-                    return errorQueuer.sendToQueue(result, 'errors').then()
+                    return await errorQueuer.sendToQueue(result, CAPTURE_SNAPSHOT_ERROR_QUEUE)
                 }
 
                 console.info(result.message)
                 channelWrapper.ack(message)
             })
-            .catch((err) => {
+            .catch(async (error) => {
                 console.log('An error occurred during dequeuing...')
-                console.error(err)
+                console.error(error)
 
                 channelWrapper.nack(message)
-                return errorQueuer.sendToQueue(err, 'errors').then()
+                return await errorQueuer.sendToQueue({
+                    ...captureData,
+                    error
+                }, CAPTURE_SNAPSHOT_ERROR_QUEUE)
             })
     }
 }])

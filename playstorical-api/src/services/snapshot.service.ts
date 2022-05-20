@@ -1,8 +1,8 @@
 import { Result, Snapshot, SnapshotTrack } from "@playstorical/core/models"
 import { getMusicProvider, getPlaystoricalDbProvider } from "@playstorical/core/modules"
 import { validatePlaylist } from "../helpers/playlist.helper"
-import NodeCache from "node-cache";
 
+import NodeCache from "node-cache";
 import moment from "moment";
 import { getSnapshotTracks } from "@playstorical/core/helpers";
 
@@ -97,10 +97,8 @@ export async function capture(data: { playlistId, snapshotId, provider }, cache:
 }
 
 function getExistingSnapshotResult(snapshot: Snapshot, additionalMsg?: string): { ok: true, message: string } {
-    console.info(`Existing snapshot exists with Id: ${snapshot?.id}`)
-
     const message = additionalMsg
-        ? `Snapshot already exists with Id: ${snapshot?.id} , nothing new was captured. ${additionalMsg}.`
+        ? `Snapshot already exists with Id: ${snapshot?.id}, nothing new was captured. ${additionalMsg}.`
         : `$Snapshot already exists with Id: ${snapshot?.id} , nothing new was captured.`
 
     return { ok: true, message }
