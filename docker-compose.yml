@@ -37,8 +37,8 @@ services:
       context: playstorical-api
       dockerfile: ./debug/Dockerfile
     restart: always
-    deploy:
-      replicas: 6
+    # deploy:
+    #  replicas: 6
     volumes:
       - /usr/src/app/node_modules
       - ./playstorical-api:/usr/src/playstorical-api

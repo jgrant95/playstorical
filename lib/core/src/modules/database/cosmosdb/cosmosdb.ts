@@ -41,7 +41,8 @@ export class Cosmosdb implements PlaystoricalDb {
             const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
 
             // TODO Handle failures better from promise reject.
-            const opResponses = await executeBatchOps(container, batchedOps, opts)
+            // TODO: Remove flatMap here, just get the ops without the above bulk stuff.
+            const opResponses = await executeBatchOps(container, batchedOps.flatMap(c => c.ops), opts)
             const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
 
             console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
@@ -80,8 +81,9 @@ export class Cosmosdb implements PlaystoricalDb {
 
         const batchedOps = getBulkOps(items, BulkOperationType.Create, opts)
 
-        const opResponses = await executeBatchOps(container, batchedOps, opts)
-        const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
+        // TODO: Remove flatMap here, just get the ops without the above bulk stuff.
+        const opResponses = await executeBatchOps(container, batchedOps.flatMap(c => c.ops), opts)
+        const totalRespCharge = this.getBatchRequestChargeTotal(opResponses || [])
 
         console.info(`[Create] Total RUs: ${totalRespCharge}`)
     }
