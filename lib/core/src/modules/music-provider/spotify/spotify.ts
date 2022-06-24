@@ -271,8 +271,10 @@ export class Spotify implements MusicProvider {
                             console.log(`[ID: ${id}] Completed - ${limit + offset}/${total}`)
                         }
                         catch (e: any) {
-                            console.log(`[ID: ${id}] Failed to execute:`, e)
-                            console.log(`[ID: ${id}] Parsed error: `, JSON.stringify(e))
+                            console.log(`[ID: ${id}] Failed to execute:`)
+
+                            // Todo: These errors (parsing objs) should be stored elsewhere, not in logs.
+                            // console.log(`[ID: ${id}] Parsed error: `, JSON.stringify(e))
 
                             const status = e.statusCode
 

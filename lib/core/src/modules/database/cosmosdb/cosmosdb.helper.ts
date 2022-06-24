@@ -1,4 +1,4 @@
-import { Container, CosmosClient, CreateOperationInput, OperationResponse, UpsertOperationInput } from "@azure/cosmos";
+import { Container, CosmosClient, CreateOperationInput, OperationResponse, Response, UpsertOperationInput } from "@azure/cosmos";
 import { tryExecute } from "../../../helpers";
 
 import { PlaystoricalDbCreateOpts } from "../../../models";
@@ -25,7 +25,7 @@ export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts
         const batchQuantity = opts?.batchQuantity ?? 100
 
         // Add new batch with ops
-        if (index % batchQuantity === 0 || index == 1) {
+        if (index % batchQuantity === 0) {
             currentBatch = currentBatch + 1
             arr.push({ batch: currentBatch, ops: [] })
         }
@@ -41,11 +41,14 @@ export function getBulkOps<T>(items: T[], operationType: BulkOperationType, opts
 }
 
 // Batch is a transactional db operation
-export async function executeBatchOps(container: Container, ops: BulkOperations[], opts?: PlaystoricalDbCreateOpts): Promise<any> {
+// Todo: generics for response returned?
+export async function executeBatchOps(container: Container, ops: BulkOperations[], opts?: PlaystoricalDbCreateOpts): Promise<Response<any>> {
+    if (ops.length > 100) throw new Error('Ops must be less than 100')
+
     return await tryExecute(async () => {
         const partitionKeyValue = opts?.partitionKey ? (ops[0]?.resourceBody[opts.partitionKey] as any) : undefined
 
-        container.items.batch(ops, partitionKeyValue)
+        return container.items.batch(ops, partitionKeyValue)
             .then(function (bulkResp) {
                 const statusCode: number = bulkResp.result?.statusCode || bulkResp.result[0]?.statusCode
                 if (statusCode !== 200 && statusCode !== 201) {

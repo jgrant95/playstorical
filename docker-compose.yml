@@ -46,8 +46,8 @@ services:
       - ./tsconfig.base.json:/usr/src/tsconfig.base.json
       - ./tsconfig.api.json:/usr/src/tsconfig.api.json
     ports:
-      - "3000-3006:80"
-      - "9003-9009:9229"
+      - "3000:80"
+      - "9003:9229"
   discovery:
     build:
       context: discovery
