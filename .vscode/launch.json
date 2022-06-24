@@ -5,61 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Lib/Core tests",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/lib/core/node_modules/ts-mocha/bin/ts-mocha",
+            "stopOnEntry": false,
+            "args": [
+                "--paths",
+                "--no-timeouts",
+                "ts:ts-node/register",
+                "${workspaceRoot}/lib/core/src/**/*.spec.ts"
+            ],
+            "cwd": "${workspaceRoot}/lib/core",
+            "protocol": "inspector"
+        },
+        {
             "type": "pwa-node",
             "request": "attach",
             "name": "API (docker)1",
             "address": "localhost",
             "port": 9003,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/usr/src",
-            "restart": true
-        },
-        {
-            "type": "pwa-node",
-            "request": "attach",
-            "name": "API (docker)2",
-            "address": "localhost",
-            "port": 9004,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/usr/src",
-            "restart": true
-        },
-        {
-            "type": "pwa-node",
-            "request": "attach",
-            "name": "API (docker)3",
-            "address": "localhost",
-            "port": 9005,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/usr/src",
-            "restart": true
-        },
-        {
-            "type": "pwa-node",
-            "request": "attach",
-            "name": "API (docker)4",
-            "address": "localhost",
-            "port": 9006,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/usr/src",
-            "restart": true
-        },
-        {
-            "type": "pwa-node",
-            "request": "attach",
-            "name": "API (docker)5",
-            "address": "localhost",
-            "port": 9007,
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "/usr/src",
-            "restart": true
-        },
-        {
-            "type": "pwa-node",
-            "request": "attach",
-            "name": "API (docker)6",
-            "address": "localhost",
-            "port": 9008,
             "localRoot": "${workspaceFolder}",
             "remoteRoot": "/usr/src",
             "restart": true
@@ -82,7 +47,7 @@
             "restart": true
         },
         {
-            "name": "Attach to Node Functions",
+            "name": "Attach to new! Node Functions",
             "type": "node",
             "request": "attach",
             "port": 9229,

@@ -1,4 +1,4 @@
-import { BulkOperationType, CosmosClient, OperationResponse } from "@azure/cosmos"
+import { BulkOperationType, CosmosClient, OperationResponse, Response } from "@azure/cosmos"
 
 import { PlaystoricalDb, PlaystoricalDbCreateOpts, PlaystoricalDbUpsertOpts } from "../../../models";
 import { executeBatchOps, executeBulkOps, getBulkOps, getContainerAsync } from "./cosmosdb.helper"
@@ -38,13 +38,18 @@ export class Cosmosdb implements PlaystoricalDb {
             // TODO & Fix: If you don't put in the correct partitionKey (when its required), we dont get an error!
             const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
 
-            const batchedOps = getBulkOps(items, BulkOperationType.Upsert, opts)
+            const bulkOps = getBulkOps(items, BulkOperationType.Upsert, opts)
+
+            let charge = 0
 
             // TODO Handle failures better from promise reject.
-            const opResponses = await executeBatchOps(container, batchedOps, opts)
-            const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
+            // TODO: Remove flatMap here, just get the ops without the above bulk stuff.
+            bulkOps.forEach(async bulkOp => {
+                const opResponses = await executeBatchOps(container, bulkOp.ops, opts)
+                charge += this.getResponseRequestChargeTotal(opResponses)
+            });
 
-            console.info(`[Upsert] Total RUs: ${totalRespCharge}`)
+            console.info(`[Upsert] Total RUs: ${charge}`)
         }
         catch (e) {
             throw e
@@ -76,14 +81,20 @@ export class Cosmosdb implements PlaystoricalDb {
      * creates items as batch transaction
     **/
     async create<T>(items: T[], containerId: string, opts?: PlaystoricalDbCreateOpts) {
+        const startTime = performance.now()
         const container = await getContainerAsync(this._cosmosdbClient, databaseId, containerId)
 
-        const batchedOps = getBulkOps(items, BulkOperationType.Create, opts)
+        const bulkOps = getBulkOps(items, BulkOperationType.Create, opts)
 
-        const opResponses = await executeBatchOps(container, batchedOps, opts)
-        const totalRespCharge = this.getBatchRequestChargeTotal(opResponses)
+        let charge = 0
+        // TODO: Remove flatMap here, just get the ops without the above bulk stuff.
+        for (let bulkOp of bulkOps) {
+            const opResponses = await executeBatchOps(container, bulkOp.ops, opts)
+            charge += this.getResponseRequestChargeTotal(opResponses)
+        }
 
-        console.info(`[Create] Total RUs: ${totalRespCharge}`)
+        const totalMs = Math.trunc(performance.now() - startTime)
+        console.info(`[Create] Total: ${bulkOps.flatMap(o => o.ops).length}, RUs: ${charge} in ${totalMs}ms`)
     }
 
     async exists(id: string, containerId: string): Promise<boolean> {
@@ -94,11 +105,19 @@ export class Cosmosdb implements PlaystoricalDb {
         return !!res?.item
     }
 
-    private getBatchRequestChargeTotal(opResponses: any[]): number {
-        return opResponses.reduce((accOpTotal, currOp) => {
-            const totalPerRes: number = this.getBulkRequestChargeTotal(currOp.result)
-            return accOpTotal + totalPerRes
-        }, 0)
+    // private getBatchRequestChargeTotal(res: Response<any>): number {
+    //     // res.find()
+    //     return this.getBulkRequestChargeTotal([])
+    //     // return opResponses.reduce((accOpTotal, currOp) => {
+    //     //     const totalPerRes: number = this.getBulkRequestChargeTotal(currOp.result)
+    //     //     return accOpTotal + totalPerRes
+    //     // }, 0)
+    // }
+
+    private getResponseRequestChargeTotal(res: Response<any>): number {
+        const reqCharge = res.headers["x-ms-request-charge"]
+
+        return reqCharge ? parseInt(reqCharge) : 0
     }
 
     private getBulkRequestChargeTotal(results: OperationResponse[]): number {

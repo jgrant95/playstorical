@@ -37,8 +37,8 @@ services:
       context: playstorical-api
       dockerfile: ./debug/Dockerfile
     restart: always
-    deploy:
-      replicas: 6
+    # deploy:
+    #  replicas: 6
     volumes:
       - /usr/src/app/node_modules
       - ./playstorical-api:/usr/src/playstorical-api
@@ -46,8 +46,8 @@ services:
       - ./tsconfig.base.json:/usr/src/tsconfig.base.json
       - ./tsconfig.api.json:/usr/src/tsconfig.api.json
     ports:
-      - "3000-3006:80"
-      - "9003-9009:9229"
+      - "3000:80"
+      - "9003:9229"
   discovery:
     build:
       context: discovery

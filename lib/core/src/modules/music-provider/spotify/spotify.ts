@@ -76,6 +76,36 @@ export class Spotify implements MusicProvider {
         }
     }
 
+    async getPlaylistSnapshotId(playlistId: string): Promise<string | null> {
+        try {
+            if (!this.spotifyApi) throw new Error('Must be authenticated!')
+
+            console.log('Retrieving playlist ids...')
+
+            const resp = await this.spotifyApi.getPlaylist(playlistId, { fields: 'snapshot_id' })
+
+            if (resp.statusCode === 404) {
+                console.log(`Playlist ${playlistId} snapshot id from Spotify was not found.`, resp)
+
+                return null
+            }
+
+            if (resp.statusCode !== 200) {
+                console.log(`Failed to get playlist ${playlistId} snapshot id from Spotify.`, resp)
+
+                throw new Error(`Failed to get playlist ${playlistId} snapshot id from Spotify.`)
+            }
+
+            return resp.body.snapshot_id
+        }
+        catch (e) {
+            console.log(`ERROR! could not get snapshot id for playlist ${playlistId}!`, e)
+            console.log(`Parsed error: `, JSON.stringify(e))
+
+            throw new Error(`ERROR! could not get snapshot id for playlist ${playlistId}!`)
+        }
+    }
+
     async getPlaylistTracks(playlistId: string, opts: { offset, limit }): Promise<SnapshotTrackResponse | null> {
         try {
             if (!this.spotifyApi) throw new Error('Must be authenticated!')
@@ -241,8 +271,10 @@ export class Spotify implements MusicProvider {
                             console.log(`[ID: ${id}] Completed - ${limit + offset}/${total}`)
                         }
                         catch (e: any) {
-                            console.log(`[ID: ${id}] Failed to execute:`, e)
-                            console.log(`[ID: ${id}] Parsed error: `, JSON.stringify(e))
+                            console.log(`[ID: ${id}] Failed to execute:`)
+
+                            // Todo: These errors (parsing objs) should be stored elsewhere, not in logs.
+                            // console.log(`[ID: ${id}] Parsed error: `, JSON.stringify(e))
 
                             const status = e.statusCode
 

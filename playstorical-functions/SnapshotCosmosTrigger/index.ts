@@ -1,8 +1,7 @@
 import { AzureFunction, Context } from "@azure/functions"
 
 import { Playlist, Snapshot, SnapshotBase, SnapshotHeader, SnapshotTrack } from '@playstorical/core/models'
-import { Cosmosdb, getMusicProvider, getPlaystoricalDbProvider } from '@playstorical/core/modules'
-import { getSnapshotTracks } from '@playstorical/core/helpers'
+import { Cosmosdb, getPlaystoricalDbProvider } from '@playstorical/core/modules'
 
 const cosmosDBTrigger: AzureFunction = async function (context: Context, documents: (Snapshot | SnapshotTrack)[]): Promise<void> {
     if (!!documents && documents.length > 0) {
@@ -11,7 +10,7 @@ const cosmosDBTrigger: AzureFunction = async function (context: Context, documen
             const db = getPlaystoricalDbProvider('cosmosdb')
 
             if (isSnapshot(snapshotDoc)) {
-                await addAdditionalTracks(db, snapshotDoc)
+                // await addAdditionalTracks(db, snapshotDoc)
                 await upsertPlaylistDocs(db, snapshotDoc)
             }
         }));
@@ -20,22 +19,22 @@ const cosmosDBTrigger: AzureFunction = async function (context: Context, documen
 
 const isSnapshot = (snapshot: SnapshotBase): snapshot is Snapshot => snapshot.type === 'snapshot'
 
-async function addAdditionalTracks(db: Cosmosdb, snapshotDoc: Snapshot) {
-    const spotify = getMusicProvider('spotify')
-    await spotify.authenticate()
+// async function addAdditionalTracks(db: Cosmosdb, snapshotDoc: Snapshot) {
+//     const spotify = getMusicProvider('spotify')
+//     await spotify.authenticate()
 
-    const nextReqUrl = snapshotDoc.metadata.initAdditionalTracksReq
-    if (nextReqUrl) {
-        // Spotify only lets you get tracks by playlist ID - there is a chance tracks may not be fully
-        // representing the spotify snapshot. This is currently the best option.
-        const tracks = await spotify.getAdditionalTracks(snapshotDoc.playlistId, { nextReqUrl })
-        const snapshotTracks = getSnapshotTracks(snapshotDoc.snapshotId, tracks)
+//     const nextReqUrl = snapshotDoc.metadata.initAdditionalTracksReq
+//     if (nextReqUrl) {
+//         // Spotify only lets you get tracks by playlist ID - there is a chance tracks may not be fully
+//         // representing the spotify snapshot. This is currently the best option.
+//         const tracks = await spotify.getAdditionalTracks(snapshotDoc.playlistId, { nextReqUrl })
+//         const snapshotTracks = getSnapshotTracks(snapshotDoc.snapshotId, tracks)
 
-        console.log(`Adding ${snapshotTracks.length} additional tracks`)
+//         console.log(`Adding ${snapshotTracks.length} additional tracks`)
 
-        await db.upsert(snapshotTracks, 'snapshot', { partitionKey: 'snapshotId', batchTransaction: true })
-    }
-}
+//         await db.upsert(snapshotTracks, 'snapshot', { partitionKey: 'snapshotId', batchTransaction: true })
+//     }
+// }
 
 async function upsertPlaylistDocs(db: Cosmosdb, snapshotDoc: Snapshot) {
     const playlist: Playlist = {
