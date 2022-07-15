@@ -1,13 +1,19 @@
 import { AmqpConnectionManager, Channel, ChannelWrapper, connect } from 'amqp-connection-manager'
+import { ConsumeMessage } from 'amqplib'
 
 const QUEUE_SERVICE_NAMES = process.env.QUEUE_SERVICE_NAMES || 'queue'
+
+export interface DequeuerConfig {
+    name: string,
+    onMessage: (message: ConsumeMessage | null, channelWrapper: ChannelWrapper) => void
+}
 
 export class Dequeuer {
     queues: string[]
     connection: AmqpConnectionManager
     channelWrapper: ChannelWrapper
 
-    constructor(queueConfig: { name: string, onMessage: (message, channelWrapper: ChannelWrapper) => void }[]) {
+    constructor(queueConfig: DequeuerConfig[]) {
         this.queues = queueConfig.map(q => q.name)
         this.connection = connect(this.getQueueServiceUrls())
         this.channelWrapper = this.connection.createChannel({

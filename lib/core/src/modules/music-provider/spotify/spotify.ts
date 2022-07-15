@@ -106,11 +106,12 @@ export class Spotify implements MusicProvider {
         }
     }
 
+    // Todo: Combine with getTracks below
     async getPlaylistTracks(playlistId: string, opts: { offset, limit }): Promise<SnapshotTrackResponse | null> {
         try {
             if (!this.spotifyApi) throw new Error('Must be authenticated!')
 
-            console.log('Retrieving playlist ids...')
+            console.log(`Retrieving playlist tracks...${opts.offset}/${opts.limit}`)
 
             const resp = await this.spotifyApi.getPlaylistTracks(playlistId, opts)
 
@@ -135,17 +136,23 @@ export class Spotify implements MusicProvider {
         }
     }
 
+    async getTracks(playlistId: string, nextReqUrl: string): Promise<SpotifyApi.PlaylistTrackResponse | null> {
+        const nextTracksUrl = new URL(nextReqUrl)?.searchParams
+        const offset = nextTracksUrl?.get('offset')
+        const limit = nextTracksUrl?.get('limit')
+
+        const resp = await this.getPlaylistTracks(playlistId, { offset, limit })
+
+        return resp
+    }
+
     async getAdditionalTracks(playlistId: string, opts: { nextReqUrl: string }): Promise<SpotifyApi.PlaylistTrackObject[] | null> {
         if (!opts.nextReqUrl) {
             return null
         }
 
-        const getTracks = async (nextReqUrl): Promise<SpotifyApi.PlaylistTrackObject[]> => {
-            const nextTracksUrl = new URL(nextReqUrl)?.searchParams
-            const offset = nextTracksUrl?.get('offset')
-            const limit = nextTracksUrl?.get('limit')
-
-            const resp = await this.getPlaylistTracks(playlistId, { offset, limit })
+        const getTracksExec = async (nextReqUrl: string): Promise<SpotifyApi.PlaylistTrackObject[]> => {
+            const resp = await this.getTracks(playlistId, nextReqUrl)
 
             if (resp === null) {
                 return []
@@ -154,14 +161,14 @@ export class Spotify implements MusicProvider {
             if (resp.next) {
                 return [
                     ...resp.items,
-                    ...(await getTracks(resp.next))
+                    ...(await getTracksExec(resp.next))
                 ]
             }
 
             return resp.items
         }
 
-        const tracks = await getTracks(opts.nextReqUrl)
+        const tracks = await getTracksExec(opts.nextReqUrl)
 
         return tracks
     }

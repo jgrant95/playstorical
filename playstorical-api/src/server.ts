@@ -5,12 +5,15 @@ import morgan from 'morgan';
 import { getSnapshotRoutes } from './routes/snapshot';
 // import { capture } from './services/snapshot.service';
 import NodeCache from "node-cache";
-import { Queuer, Dequeuer, CAPTURE_SNAPSHOT_QUEUE, CAPTURE_SNAPSHOT_ERROR_QUEUE } from '@playstorical/core/modules';
-import { capture } from './services/snapshot.service';
+import { CAPTURE_SNAPSHOT_ERROR_QUEUE, UPLOAD_TO_BLOB_ERROR_QUEUE } from '@playstorical/core/modules';
+import { MessageBusManagerService } from './services/message-bus-manager.service';
+import { captureSnapshotDequeuer } from './helpers/dequeuer.helper';
 
 const PORT: any = process.env.PORT || 80;
 const app: Express = express();
+
 const cache = new NodeCache()
+const busManager = new MessageBusManagerService()
 
 let server
 
@@ -62,34 +65,10 @@ app.on('SIGTERM', () => {
     }
 })
 
-const errorQueuer = new Queuer([CAPTURE_SNAPSHOT_ERROR_QUEUE])
+busManager.createQueuer(CAPTURE_SNAPSHOT_ERROR_QUEUE)
+busManager.createQueuer(UPLOAD_TO_BLOB_ERROR_QUEUE)
 
-const dequeuer = new Dequeuer([{
-    name: CAPTURE_SNAPSHOT_QUEUE,
-    onMessage: (message, channelWrapper) => {
-        const captureData = JSON.parse(message.content.toString()) // test if this fails, what kind of error gets thrown?
-        capture(captureData, cache)
-            .then(async (result) => {
-                if (result.ok === false) {
-                    channelWrapper.nack(message)
-                    return await errorQueuer.sendToQueue(result, CAPTURE_SNAPSHOT_ERROR_QUEUE)
-                }
-
-                console.info(result.message)
-                channelWrapper.ack(message)
-            })
-            .catch(async (error) => {
-                console.log('An error occurred during dequeuing...')
-                console.error(error)
-
-                channelWrapper.nack(message)
-                return await errorQueuer.sendToQueue({
-                    ...captureData,
-                    error
-                }, CAPTURE_SNAPSHOT_ERROR_QUEUE)
-            })
-    }
-}])
+const dequeuer = busManager.createDequeuer(captureSnapshotDequeuer(busManager, cache))
 
 dequeuer.onConnect(() => {
     /** SERVER */

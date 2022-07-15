@@ -2,8 +2,8 @@ import moment from "moment";
 
 import { SnapshotTrack } from "../models"
 
-export function getSnapshotTracks(snapshotId: string, tracks: SpotifyApi.PlaylistTrackObject[]): SnapshotTrack[] {
-    const createdAt = moment()
+export function getSnapshotTracks(snapshotId: string, tracks: SpotifyApi.PlaylistTrackObject[], opts?: { createdAt?: moment.Moment }): SnapshotTrack[] {
+    const createdAt = opts?.createdAt || moment()
 
     return (tracks || []).reduce((acc: SnapshotTrack[], trackObj: SpotifyApi.PlaylistTrackObject) => {
         try {
