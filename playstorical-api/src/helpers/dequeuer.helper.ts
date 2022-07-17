@@ -1,6 +1,6 @@
 import NodeCache from "node-cache";
 
-import { CAPTURE_SNAPSHOT_ERROR_QUEUE, CAPTURE_SNAPSHOT_QUEUE, DequeuerConfig, UPLOAD_TO_BLOB_ERROR_QUEUE, UPLOAD_TO_BLOB_QUEUE } from "@playstorical/core/modules"
+import { CAPTURE_SNAPSHOT_ERROR_QUEUE, CAPTURE_SNAPSHOT_QUEUE, DequeuerConfig, UPLOAD_TO_BLOB_QUEUE } from "@playstorical/core/modules"
 import { capture } from "../services/snapshot.service"
 import { MessageBusManagerService } from "../services/message-bus-manager.service";
 
@@ -40,14 +40,14 @@ export const uploadToBlobDequeuer = (busManager: MessageBusManagerService, cache
     onMessage: (message, channelWrapper) => {
         if (!message) throw new Error('Upload to blob message content must not be null')
 
-        const errorQueuer = busManager.getQueuer(UPLOAD_TO_BLOB_ERROR_QUEUE)
+        // const errorQueuer = busManager.getQueuer(UPLOAD_TO_BLOB_ERROR_QUEUE)
 
         // Typing against the content
         const data = JSON.parse(message.content.toString()) // test if this fails, what kind of error gets thrown?
         const { opts, item }: { opts: { fileName: string, containerName: string }, item: any } = data
 
         // TODO NEXT: Upload to blob based on message content
-        console.log(opts, item)s
+        console.log(opts, item)
 
         // capture(captureData, cache)
         //     .then(async (result) => {

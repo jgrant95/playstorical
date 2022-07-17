@@ -1,3 +1,4 @@
+# https://github.com/Azure/azure-functions-nodejs-worker/issues/386
 FROM mcr.microsoft.com/azure-functions/node:4-node14-core-tools
 
 ENV APPDIR /usr/src/playstorical-functions

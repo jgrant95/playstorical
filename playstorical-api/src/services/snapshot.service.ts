@@ -106,10 +106,7 @@ export async function capture(data: { playlistId, snapshotId, provider }, cache:
 
     // insert snapshot and tracks
 
-    // await uploadToStorage([snapshot, ...snapshotTracks].map(s => ({
-    //     ...s,
-    //     createdAt: snapshotCreatedAt
-    // })), provider)
+    await uploadToStorage([snapshot], provider)
 
     // if (results.some(r => !r.success)) {
     //     console.log(`Failed to upload to storage. ${results.filter(r => !r.success).length} failed.`)

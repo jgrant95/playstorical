@@ -7,14 +7,16 @@ export function getSnapshotTracks(snapshotId: string, tracks: SpotifyApi.Playlis
 
     return (tracks || []).reduce((acc: SnapshotTrack[], trackObj: SpotifyApi.PlaylistTrackObject) => {
         try {
-            const track: SnapshotTrack = {
-                id: trackObj.track.id,
-                snapshotId: snapshotId,
-                data: trackObj,
-                type: 'snapshot-track',
-                createdAt: createdAt
+            if (trackObj.track) {
+                const track: SnapshotTrack = {
+                    id: trackObj.track.id,
+                    snapshotId: snapshotId,
+                    data: trackObj,
+                    type: 'snapshot-track',
+                    createdAt: createdAt
+                }
+                acc.push(track)
             }
-            acc.push(track)
         }
         catch (err) {
             console.warn(`Failed to map snapshot track: ${trackObj?.track?.id}. SnapshotId: ${snapshotId}`)

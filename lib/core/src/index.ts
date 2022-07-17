@@ -1,3 +1,6 @@
 export * from './models'
 export * from './modules'
 export * from './helpers'
+export * from './errors'
+export * from './middleware'
+export * from './utils'
